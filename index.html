@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>天空競技場｜業務商品修練大賽</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/animation.css">
+    <!-- 引入 Excel (SheetJS) 與 PDF (pdf.js) 前端解析庫 -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+</head>
+<body>
+    <!-- 頂部導覽列 -->
+    <header class="top-nav">
+        <div class="brand">⚡ 天空競技場 <span class="sub-brand">商品實戰修練塔</span></div>
+        <nav class="nav-buttons">
+            <button onclick="App.switchTab('lobby')" id="btn-lobby" class="active">🏰 競技大廳</button>
+            <button onclick="App.switchTab('leaderboard')" id="btn-leaderboard">🏆 樓層英雄榜</button>
+            <button onclick="App.switchTab('admin')" id="btn-admin">⚙️ 後台設定</button>
+        </nav>
+    </header>
+
+    <!-- 主內容區 (RWD 自適應容器) -->
+    <main class="app-container">
+        <!-- 模組 1：競技大廳與登入區 -->
+        <section id="view-lobby" class="view-section active"></section>
+
+        <!-- 模組 2：獨立戰鬥與念能力動畫擂台 -->
+        <section id="view-arena" class="view-section"></section>
+
+        <!-- 模組 3：獨立各樓層挑戰者英雄榜 -->
+        <section id="view-leaderboard" class="view-section"></section>
+
+        <!-- 模組 4：獨立密碼保護後台管理系統 -->
+        <section id="view-admin" class="view-section"></section>
+    </main>
+
+    <!-- 依序載入獨立 JS 模組 -->
+    <script src="js/data.js"></script>
+    <script src="js/arena.js"></script>
+    <script src="js/leaderboard.js"></script>
+    <script src="js/admin.js"></script>
+    <script>
+        const App = {
+            switchTab(tabName) {
+                document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+                document.querySelectorAll('.nav-buttons button').forEach(el => el.classList.remove('active'));
+
+                if (tabName === 'lobby') {
+                    document.getElementById('view-lobby').classList.add('active');
+                    document.getElementById('btn-lobby').classList.add('active');
+                    this.renderLobby();
+                } else if (tabName === 'leaderboard') {
+                    document.getElementById('view-leaderboard').classList.add('active');
+                    document.getElementById('btn-leaderboard').classList.add('active');
+                    LeaderboardModule.render();
+                } else if (tabName === 'admin') {
+                    document.getElementById('view-admin').classList.add('active');
+                    document.getElementById('btn-admin').classList.add('active');
+                    AdminModule.render();
+                } else if (tabName === 'arena') {
+                    document.getElementById('view-arena').classList.add('active');
+                }
+            },
+
+            renderLobby() {
+                const container = document.getElementById('view-lobby');
+                const user = DataStore.getCurrentUser();
+
+                if (!user) {
+                    container.innerHTML = `
+                        <div class="glass-card login-card">
+                            <h2>🔥 挑戰者登錄櫃檯</h2>
+                            <p class="hint-text" style="color:var(--text-muted); margin:8px 0 16px;">踏入高達 200 層的天空競技場，透過商品問答施展念能力晉級！（測試帳號：gon / 密碼：123）</p>
+                            <div class="form-group">
+                                <label>挑戰者帳號</label>
+                                <input type="text" id="login-user" placeholder="請輸入帳號 (如: gon, killua, kurapika, leorio)">
+                            </div>
+                            <div class="form-group">
+                                <label>挑戰者密碼</label>
+                                <input type="password" id="login-pwd" placeholder="請輸入密碼 (預設: 123)">
+                            </div>
+                            <button class="btn-primary full-width" onclick="App.login()">進入天空競技場</button>
+
+                            <hr class="divider">
+                            <h3>🌟 七大念能力初始頭像一覽（由左至右）</h3>
+                            <div class="avatar-preview-grid">
+                                ${AVATAR_CONFIG.map((a, idx) => `
+                                    <div class="avatar-card">
+                                        <span class="order-badge">${idx + 1}</span>
+                                        <img src="${a.img}" alt="${a.name}" 
+                                             onerror="if(!this.dataset.try){this.dataset.try=1;this.src=this.src.replace('.jpg','.png');}else if(this.dataset.try==1){this.dataset.try=2;this.src=this.src.replace('.png','.jpeg');}">
+                                        <div class="avatar-title">${a.name}</div>
+                                        <span class="nen-tag ${a.nenClass}">${a.nen}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const avatarInfo = DataStore.getAvatarInfo(user);
+                const canCustomizeAvatar = user.floor >= 30;
+                const nextMasterFloor = [50, 100, 150, 200].find(f => f >= user.floor) || 200;
+                const masterInfo = DEFAULT_FLOOR_MASTERS[nextMasterFloor];
+
+                // 取得目前所在樓層的商品名稱
+                const floorQuestions = DataStore.getQuestions().filter(q => Number(q.floor) === Number(user.floor));
+                const currentFloorName = floorQuestions.length > 0 ? floorQuestions[0].floorName : `第 ${user.floor} 層商品修練`;
+
+                container.innerHTML = `
+                    <div class="lobby-grid">
+                        <div class="glass-card profile-card">
+                            <div class="profile-header">
+                                <div class="avatar-wrapper ${avatarInfo.nenClass}">
+                                    <img src="${avatarInfo.displayImg}" alt="${user.nickname}" onerror="this.src='assets/avatars/全能巨星.jpg'">
+                                    <span class="floor-badge">${user.floor}F</span>
+                                </div>
+                                <div class="profile-meta">
+                                    <h2>${user.nickname} <small>(@${user.username})</small></h2>
+                                    <p style="margin-top:6px;">初始形象：<strong>${avatarInfo.name}</strong>｜屬性：<span class="nen-tag ${avatarInfo.nenClass}">${avatarInfo.nen}</span></p>
+                                    <p style="margin-top:4px;">必殺技：⚡ <strong>${avatarInfo.attackName}</strong></p>
+                                    <p style="margin-top:4px;">累積勝場：<strong>${user.wins || 0} 勝</strong></p>
+                                </div>
+                            </div>
+
+                            <!-- 規則 2：通過 30 樓層可自訂大頭像 -->
+                            <div class="custom-avatar-box ${canCustomizeAvatar ? 'unlocked' : 'locked'}">
+                                <h4>🎨 30樓層榮譽特權：自訂專屬大頭像</h4>
+                                ${canCustomizeAvatar ? `
+                                    <p style="color:var(--success); margin:6px 0;">✅ 恭喜突破 30 樓層！你已獲得上傳自訂大頭像的資格：</p>
+                                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:8px;">
+                                        <input type="file" id="custom-avatar-input" accept="image/*" onchange="App.uploadCustomAvatar(event)">
+                                        <button class="btn-secondary" onclick="App.resetCustomAvatar()">恢復預設頭像</button>
+                                    </div>
+                                ` : `
+                                    <p style="color:var(--text-muted); margin-top:6px;">🔒 尚未解鎖（目前位於 ${user.floor}F，晉升至 <strong>30F</strong> 即可自由上傳頭像！）</p>
+                                `}
+                            </div>
+
+                            <button class="btn-danger full-width" style="margin-top:15px;" onclick="App.logout()">登出挑戰者帳號</button>
+                        </div>
+
+                        <!-- 天空競技場塔樓狀態與出戰區 -->
+                        <div class="glass-card tower-card">
+                            <h2>🗼 天空競技場晉級挑戰</h2>
+                            <div class="tower-progress">
+                                <div class="progress-bar" style="width: ${Math.min(100, (user.floor / 200) * 100)}%"></div>
+                                <span>目前樓層：第 ${user.floor} 層（${currentFloorName}）</span>
+                            </div>
+
+                            <div class="boss-alert">
+                                <h4>👑 50樓以上關主守門規則</h4>
+                                <p>到達 50F、100F、150F、200F 時，將強制迎戰該層<strong>樓層關主 (Floor Master)</strong>！</p>
+                                <p>下一位鎮守關主：<strong>${masterInfo.name} (${masterInfo.title})</strong></p>
+                            </div>
+
+                            <button class="btn-arena-start" onclick="ArenaModule.startMatch()">
+                                ⚔️ 進入第 ${user.floor} 層擂台（${currentFloorName}）
+                            </button>
+                        </div>
+                    </div>
+                `;
+            },
+
+            login() {
+                const u = document.getElementById('login-user').value.trim();
+                const p = document.getElementById('login-pwd').value.trim();
+                const found = DataStore.getUsers().find(user => user.username === u && user.password === p);
+                if (!found) {
+                    alert('帳號或密碼錯誤！請確認後重試，或由後台新增挑戰者。');
+                    return;
+                }
+                sessionStorage.setItem('ha_current_user', found.username);
+                this.renderLobby();
+            },
+
+            logout() {
+                sessionStorage.removeItem('ha_current_user');
+                this.renderLobby();
+            },
+
+            uploadCustomAvatar(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const user = DataStore.getCurrentUser();
+                    user.customAvatar = e.target.result;
+                    DataStore.updateUser(user);
+                    alert('🎉 自訂大頭像更新成功！');
+                    App.renderLobby();
+                };
+                reader.readAsDataURL(file);
+            },
+
+            resetCustomAvatar() {
+                const user = DataStore.getCurrentUser();
+                user.customAvatar = '';
+                DataStore.updateUser(user);
+                this.renderLobby();
+            }
+        };
+
+        window.addEventListener('DOMContentLoaded', () => App.renderLobby());
+    </script>
+</body>
+</html>

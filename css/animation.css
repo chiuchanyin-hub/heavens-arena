@@ -1,0 +1,378 @@
+/* css/animation.css - 動漫特效、30秒圓形倒數圈、中央商品牌與恭喜晉級動畫 */
+
+:root {
+    --bg-dark: #0b0f19;
+    --bg-panel: rgba(18, 25, 43, 0.88);
+    --gold: #f59e0b;
+    --gold-light: #fcd34d;
+    --accent-blue: #38bdf8;
+    --danger: #ef4444;
+    --success: #10b981;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+}
+
+/* 六大系專屬氣場標籤 */
+.nen-enhancer { background: #ef4444; color: #fff; box-shadow: 0 0 15px rgba(239, 68, 68, 0.8); }
+.nen-conjurer-doc { background: #10b981; color: #fff; box-shadow: 0 0 15px rgba(16, 185, 129, 0.8); }
+.nen-transmuter { background: #8b5cf6; color: #fff; box-shadow: 0 0 15px rgba(139, 92, 246, 0.8); }
+.nen-emitter { background: #0ea5e9; color: #fff; box-shadow: 0 0 15px rgba(14, 165, 233, 0.9); }
+.nen-specialist { background: #eab308; color: #000; box-shadow: 0 0 15px rgba(234, 179, 8, 0.9); }
+.nen-manipulator { background: #6366f1; color: #fff; box-shadow: 0 0 15px rgba(99, 102, 241, 0.8); }
+.nen-conjurer-walk { background: #14b8a6; color: #fff; box-shadow: 0 0 15px rgba(20, 184, 166, 0.8); }
+
+/* 擂台對戰舞台：挑戰者固定在左，中央資訊區，關主固定在右 */
+.arena-stage {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: radial-gradient(circle at 50% 50%, rgba(30, 41, 59, 0.92) 0%, rgba(9, 13, 22, 0.96) 100%);
+    border: 2px solid var(--gold);
+    border-radius: 16px;
+    padding: 24px 30px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+    min-height: 290px;
+    box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.85);
+}
+
+.arena-stage.stage-shake {
+    animation: stageEarthquake 0.45s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+@keyframes stageEarthquake {
+    0%, 100% { transform: translate(0, 0); }
+    15% { transform: translate(-12px, -8px); filter: brightness(1.6); }
+    30% { transform: translate(12px, 6px); }
+    45% { transform: translate(-10px, 8px); filter: brightness(1.3); }
+    60% { transform: translate(10px, -6px); }
+    75% { transform: translate(-6px, 4px); }
+}
+
+/* 獨立高幀率動漫特效畫布 */
+#nen-fx-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 20;
+}
+
+.fighter-box {
+    text-align: center;
+    width: 30%;
+    z-index: 5;
+    position: relative;
+}
+
+/* =========================================================
+   中央區域：30秒圓形倒數圈 + VS + 紅框處「商品名稱」橫幅
+   ========================================================= */
+.arena-center-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 36%;
+    z-index: 6;
+    gap: 10px;
+}
+
+/* SVG 圓形倒數計時器 */
+.timer-ring-wrapper {
+    position: relative;
+    width: 76px;
+    height: 76px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.timer-svg {
+    width: 76px;
+    height: 76px;
+    transform: rotate(-90deg);
+}
+
+.timer-circle-bg {
+    fill: rgba(15, 23, 42, 0.75);
+    stroke: rgba(255, 255, 255, 0.15);
+    stroke-width: 6;
+}
+
+.timer-circle-progress {
+    fill: none;
+    stroke: #10b981;
+    stroke-width: 6;
+    stroke-linecap: round;
+    stroke-dasharray: 201; /* 2 * PI * 32 */
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 0.1s linear, stroke 0.3s ease;
+    filter: drop-shadow(0 0 6px currentColor);
+}
+
+.timer-text {
+    position: absolute;
+    font-size: 1.35rem;
+    font-weight: 900;
+    color: #fff;
+    text-shadow: 0 2px 6px #000;
+}
+
+.vs-title {
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: var(--gold);
+    text-shadow: 0 0 15px rgba(245, 158, 11, 0.85);
+    letter-spacing: 2px;
+}
+
+/* 紅框處：中央商品名稱專屬展示牌 */
+.center-product-banner {
+    width: 100%;
+    padding: 10px 16px;
+    background: linear-gradient(90deg, rgba(245, 158, 11, 0.12), rgba(245, 158, 11, 0.32), rgba(245, 158, 11, 0.12));
+    border: 1.5px solid var(--gold);
+    border-radius: 12px;
+    text-align: center;
+    color: var(--gold-light);
+    font-size: 1.15rem;
+    font-weight: 900;
+    letter-spacing: 1px;
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
+}
+
+.fighter-avatar-wrap {
+    position: relative;
+    display: inline-block;
+}
+
+.fighter-avatar {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #fff;
+    border: 4px solid var(--gold);
+    animation: nenPulse 2s infinite alternate;
+    transition: transform 0.2s;
+}
+
+@keyframes nenPulse {
+    from { filter: drop-shadow(0 0 8px var(--gold)); transform: scale(0.98); }
+    to { filter: drop-shadow(0 0 22px var(--accent-blue)); transform: scale(1.03); }
+}
+
+.fighter-box.attacker-charge .fighter-avatar {
+    animation: attackerMotion 0.95s ease-out forwards;
+}
+
+@keyframes attackerMotion {
+    0% { transform: translateX(0) scale(1); }
+    25% { transform: translateX(-18px) scale(0.92) rotate(-8deg); filter: drop-shadow(0 0 30px #f59e0b) brightness(1.5); }
+    45% { transform: translateX(35px) scale(1.18) rotate(8deg); filter: drop-shadow(0 0 40px #fff) brightness(1.8); }
+    80% { transform: translateX(10px) scale(1.05); }
+    100% { transform: translateX(0) scale(1); }
+}
+
+.fighter-box.boss-damaged .fighter-avatar {
+    animation: bossHitImpact 0.65s ease-out forwards;
+}
+
+@keyframes bossHitImpact {
+    0% { transform: translateX(0) scale(1); }
+    20% { transform: translateX(42px) rotate(18deg) scale(0.9); filter: brightness(3) contrast(2) drop-shadow(0 0 35px #ef4444); }
+    40% { transform: translateX(25px) rotate(-14deg) scale(1.1); filter: sepia(1) hue-rotate(-50deg) saturate(5); }
+    60% { transform: translateX(35px) rotate(12deg); }
+    80% { transform: translateX(-10px) rotate(-5deg); }
+    100% { transform: translateX(0) scale(1); }
+}
+
+.damage-popup {
+    position: absolute;
+    top: -15px;
+    right: 10%;
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: #ef4444;
+    text-shadow: 0 0 10px #fff, 2px 2px 0 #000, -2px -2px 0 #000;
+    z-index: 30;
+    pointer-events: none;
+    animation: floatDamage 0.9s ease-out forwards;
+}
+
+@keyframes floatDamage {
+    0% { opacity: 0; transform: translateY(20px) scale(0.5); }
+    30% { opacity: 1; transform: translateY(-15px) scale(1.3); }
+    80% { opacity: 1; transform: translateY(-30px) scale(1); }
+    100% { opacity: 0; transform: translateY(-45px) scale(0.8); }
+}
+
+.hp-bar-wrap {
+    background: rgba(0, 0, 0, 0.65);
+    border: 1px solid rgba(255,255,255,0.35);
+    height: 15px;
+    border-radius: 99px;
+    overflow: hidden;
+    margin-top: 10px;
+}
+
+.hp-bar-fill {
+    background: linear-gradient(90deg, #10b981, #34d399);
+    height: 100%;
+    transition: width 0.35s ease;
+}
+
+/* =========================================================
+   100% 過關「恭喜晉級」全螢幕慶祝動畫樣式
+   ========================================================= */
+.promo-celebration-box {
+    position: relative;
+    overflow: hidden;
+    background: radial-gradient(circle at 50% 30%, rgba(245, 158, 11, 0.35), rgba(15, 23, 42, 0.95));
+    border: 2px solid var(--gold-light);
+    box-shadow: 0 0 45px rgba(245, 158, 11, 0.6);
+    animation: promoPopIn 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes promoPopIn {
+    0% { opacity: 0; transform: scale(0.6) translateY(30px); }
+    60% { opacity: 1; transform: scale(1.05) translateY(-5px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.promo-badge-anim {
+    display: inline-block;
+    font-size: 3.4rem;
+    margin-bottom: 8px;
+    animation: trophyBounce 1.2s ease-in-out infinite alternate;
+    filter: drop-shadow(0 0 25px #f59e0b);
+}
+
+@keyframes trophyBounce {
+    from { transform: translateY(0) scale(1) rotate(-5deg); }
+    to { transform: translateY(-12px) scale(1.18) rotate(5deg); }
+}
+
+.promo-title-glow {
+    font-size: 2rem;
+    font-weight: 900;
+    background: linear-gradient(90deg, #fff, #fde047, #f59e0b, #fff);
+    background-size: 200% auto;
+    color: transparent;
+    -webkit-background-clip: text;
+    background-clip: text;
+    animation: shineText 2s linear infinite;
+}
+
+@keyframes shineText {
+    to { background-position: 200% center; }
+}
+
+/* =========================================================
+   樓層英雄榜：依樓層分組卡片樣式
+   ========================================================= */
+.floor-group-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    border-radius: 14px;
+    margin-bottom: 16px;
+    overflow: hidden;
+}
+
+.floor-group-header {
+    background: linear-gradient(90deg, rgba(245, 158, 11, 0.28), rgba(15, 23, 42, 0.8));
+    padding: 12px 18px;
+    border-bottom: 1px solid rgba(245, 158, 11, 0.3);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.floor-challenger-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 12px;
+    padding: 16px;
+}
+
+.floor-challenger-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 10px 14px;
+    border-radius: 12px;
+}
+
+.option-btn {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 14px 18px;
+    margin-bottom: 12px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    font-size: 1.05rem;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.option-btn:hover {
+    background: rgba(245, 158, 11, 0.25);
+    border-color: var(--gold);
+}
+
+.review-item {
+    padding: 16px;
+    border-radius: 12px;
+    margin-bottom: 14px;
+    background: rgba(255, 255, 255, 0.05);
+    border-left: 5px solid var(--success);
+}
+.review-item.wrong {
+    border-left-color: var(--danger);
+    background: rgba(239, 68, 68, 0.1);
+}
+.badge-train {
+    display: inline-block;
+    background: var(--danger);
+    color: #fff;
+    font-weight: 900;
+    padding: 4px 12px;
+    border-radius: 6px;
+    margin-left: 8px;
+    animation: pulseTrain 1s infinite alternate;
+}
+
+@keyframes pulseTrain {
+    from { transform: scale(1); }
+    to { transform: scale(1.08); box-shadow: 0 0 12px rgba(239, 68, 68, 0.8); }
+}
+
+@media (max-width: 640px) {
+    .arena-stage {
+        padding: 16px 8px;
+        min-height: 240px;
+    }
+    .fighter-avatar {
+        width: 72px;
+        height: 72px;
+    }
+    .center-product-banner {
+        font-size: 0.9rem;
+        padding: 6px 8px;
+    }
+    .timer-ring-wrapper, .timer-svg {
+        width: 60px;
+        height: 60px;
+    }
+}
