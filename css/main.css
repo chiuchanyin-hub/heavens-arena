@@ -392,65 +392,62 @@ textarea {
     }
 }
 /* =========================================================
-   📱 手機版「零捲動・同屏滿版」終極自適應佈局 (100dvh 鎖定)
-   確保「動畫擂台 + 題目 + 4個選項」100% 呈現在同一畫面！
+   📱 手機版「同屏滿版・大字體緊湊選項」最佳化佈局
    ========================================================= */
 @media (max-width: 768px) {
-    /* 1. 壓縮頂部導覽列高度 */
+    /* 1. 頂部導覽列緊湊化 */
     .top-nav {
-        padding: 6px 10px !important;
-        min-height: 44px !important;
+        padding: 8px 10px !important;
+        min-height: 46px !important;
     }
     .brand {
-        font-size: 0.95rem !important;
+        font-size: 1.05rem !important;
     }
     .sub-brand {
-        display: none !important; /* 手機隱藏副標省空間 */
+        display: none !important;
     }
     .nav-buttons button {
-        padding: 4px 8px !important;
-        font-size: 0.78rem !important;
+        padding: 6px 10px !important;
+        font-size: 0.85rem !important;
     }
 
-    /* 2. 主容器滿版緊湊化 */
+    /* 2. 主容器設定 */
     .app-container {
-        padding: 6px 8px !important;
+        padding: 8px 10px !important;
         margin: 0 auto !important;
     }
 
-    /* 3. 當進入「擂台戰鬥頁 (#view-arena)」時，鎖定剛好一個手機螢幕高 */
+    /* 3. 擂台戰鬥頁鎖定單頁高度，避免整頁上下滑動 */
     #view-arena.view-section.active {
         display: flex !important;
         flex-direction: column !important;
-        height: calc(100dvh - 56px) !important; /* 扣除頂部導覽列後的完整手機可視高度 */
+        height: calc(100dvh - 60px) !important;
         overflow: hidden !important;
-        gap: 6px !important;
+        gap: 8px !important;
     }
 
-    /* 若已到賽後結算畫面（有2張卡片以上且無擂台），恢復可正常上下滑動看詳解 */
+    /* 賽後結算畫面恢復可自由滑動看解析 */
     #view-arena.view-section.active:not(:has(.arena-stage)) {
         height: auto !important;
         overflow: visible !important;
     }
 
-    /* 4. 關鍵修正：強制擂台維持「左右對決（橫排）」，禁止變成垂直堆疊！ */
+    /* 4. 上方對戰擂台：維持左右橫排對決，適度放大頭像與字體 */
     #view-arena .arena-stage {
         flex: 0 0 auto !important;
         display: flex !important;
-        flex-direction: row !important; /* 強制左、中、右並排 */
+        flex-direction: row !important;
         justify-content: space-between !important;
         align-items: center !important;
-        min-height: 112px !important;
-        max-height: 125px !important;
-        padding: 8px 10px !important;
+        min-height: 130px !important;
+        padding: 10px 12px !important;
         margin-bottom: 0 !important;
-        border-radius: 12px !important;
+        border-radius: 14px !important;
     }
 
-    /* 左右選手框緊湊化 */
     #view-arena .fighter-box {
-        width: 34% !important;
-        max-width: 120px !important;
+        width: 35% !important;
+        max-width: 130px !important;
         padding: 0 !important;
         margin: 0 !important;
         text-align: center !important;
@@ -459,20 +456,20 @@ textarea {
         margin: 0 auto !important;
     }
     #view-arena .fighter-avatar {
-        width: 44px !important;
-        height: 44px !important;
+        width: 54px !important;
+        height: 54px !important;
         border-width: 2px !important;
     }
     #view-arena .fighter-box h4 {
-        font-size: 0.75rem !important;
-        margin: 3px 0 2px !important;
+        font-size: 0.88rem !important;
+        margin: 4px 0 3px !important;
         white-space: nowrap !important;
         overflow: hidden !important;
         text-overflow: ellipsis !important;
     }
     #view-arena .fighter-box .nen-tag {
-        font-size: 0.62rem !important;
-        padding: 1px 5px !important;
+        font-size: 0.72rem !important;
+        padding: 2px 6px !important;
         display: inline-block !important;
         max-width: 100% !important;
         white-space: nowrap !important;
@@ -480,86 +477,85 @@ textarea {
         text-overflow: ellipsis !important;
     }
     #view-arena .hp-bar-wrap {
-        height: 6px !important;
-        margin-top: 4px !important;
+        height: 8px !important;
+        margin-top: 6px !important;
     }
 
-    /* 中央倒數圈與 VS 緊湊化 */
+    /* 中央倒數圈與 VS */
     #view-arena .arena-center-panel {
-        width: 30% !important;
+        width: 28% !important;
         display: flex !important;
         flex-direction: column !important;
         align-items: center !important;
         justify-content: center !important;
-        gap: 2px !important;
+        gap: 3px !important;
     }
     #view-arena .timer-ring-wrapper {
-        width: 42px !important;
-        height: 42px !important;
+        width: 48px !important;
+        height: 48px !important;
     }
     #view-arena .timer-text {
-        font-size: 0.75rem !important;
+        font-size: 0.85rem !important;
     }
     #view-arena .vs-title {
-        font-size: 0.9rem !important;
+        font-size: 1rem !important;
         margin: 0 !important;
         line-height: 1 !important;
     }
     #view-arena .center-product-banner {
-        font-size: 0.65rem !important;
-        padding: 2px 6px !important;
-        max-width: 100px !important;
+        font-size: 0.75rem !important;
+        padding: 3px 8px !important;
+        max-width: 110px !important;
         white-space: nowrap !important;
         overflow: hidden !important;
         text-overflow: ellipsis !important;
     }
 
-    /* 5. 下方題目與選項區：自動填滿剩餘螢幕高度，內部彈性分配空間 */
+    /* 5. 下方題目與選項卡片：改為靠上緊湊排列，消除選項間的巨大空白！ */
     #view-arena > .glass-card {
         flex: 1 1 auto !important;
         display: flex !important;
         flex-direction: column !important;
-        justify-content: space-between !important;
-        padding: 10px 12px !important;
+        justify-content: flex-start !important; /* 靠上自然排列，不強行拉開空白 */
+        padding: 14px 14px !important;
         margin-bottom: 0 !important;
-        overflow-y: auto !important; /* 萬一題目字數破百字時才局部微滾動，不影響上方擂台 */
+        overflow-y: auto !important;
     }
 
     /* 樓層與題號資訊列 */
     #view-arena > .glass-card > div:first-child {
-        margin-bottom: 4px !important;
+        margin-bottom: 8px !important;
         gap: 4px !important;
     }
     #view-arena > .glass-card > div:first-child span {
-        font-size: 0.78rem !important;
+        font-size: 0.9rem !important;
     }
 
-    /* 題目文字自動適應 */
+    /* 題目文字：放大至清晰易讀的 1.15rem */
     #view-arena > .glass-card h3 {
-        font-size: 0.95rem !important;
-        line-height: 1.38 !important;
-        margin-bottom: 6px !important;
+        font-size: 1.15rem !important;
+        line-height: 1.45 !important;
+        margin-bottom: 14px !important;
         flex-shrink: 0 !important;
     }
 
-    /* 4 個選項容器：平均分配高度 */
+    /* 4 個選項容器：固定間距 10px，不再把空白塞在按鈕中間 */
     #view-arena > .glass-card > div:last-child {
-        flex: 1 1 auto !important;
         display: flex !important;
         flex-direction: column !important;
-        justify-content: space-evenly !important;
-        gap: 6px !important;
+        justify-content: flex-start !important;
+        gap: 10px !important;
     }
 
-    /* 單一選項按鈕：高密度好點擊 */
+    /* 單一選項按鈕：字體放大至 1.05rem、加厚內距，飽滿好按 */
     #view-arena .option-btn {
-        padding: 8px 10px !important;
+        padding: 13px 14px !important;
         margin: 0 !important;
-        font-size: 0.86rem !important;
-        line-height: 1.3 !important;
-        border-radius: 8px !important;
+        font-size: 1.05rem !important;
+        font-weight: 600 !important;
+        line-height: 1.4 !important;
+        border-radius: 10px !important;
         display: flex !important;
         align-items: center !important;
-        min-height: 38px !important;
     }
 }
