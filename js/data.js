@@ -233,7 +233,7 @@ const DataStore = {
     getQuestions() { return JSON.parse(localStorage.getItem('ha_questions') || '[]'); },
     saveQuestions(questions) { localStorage.setItem('ha_questions', JSON.stringify(questions)); },
     getCurrentUser() {
-        const username = sessionStorage.getItem('ha_current_user');
+        const username = localStorage.getItem('ha_current_user');
         if (!username) return null;
         return this.getUsers().find(u => u.username === username) || null;
     },
