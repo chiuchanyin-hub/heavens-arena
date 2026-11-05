@@ -193,12 +193,30 @@ const DEFAULT_USERS = [
         "floor": 1,
         "customAvatar": "",
         "wins": 0
+    },
+    {
+        "username": "00886604",
+        "password": "770819",
+        "nickname": "嘉峰",
+        "roleId": "agent",
+        "floor": 1,
+        "customAvatar": "",
+        "wins": 0
+    },
+    {
+        "username": "00719463",
+        "password": "660315",
+        "nickname": "李副理",
+        "roleId": "agent",
+        "floor": 1,
+        "customAvatar": "",
+        "wins": 0
     }
 ];
 
 const DataStore = {
     init() {
-        const DATA_VERSION = '1793850891378';
+        const DATA_VERSION = '1793851390458';
         if (localStorage.getItem('ha_data_version') !== DATA_VERSION) {
             localStorage.setItem('ha_questions', JSON.stringify(DEFAULT_QUESTIONS));
             if (!localStorage.getItem('ha_users')) {
