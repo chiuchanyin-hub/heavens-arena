@@ -392,67 +392,174 @@ textarea {
     }
 }
 /* =========================================================
-   手機螢幕長度與擂台排版自適應優化 (RWD)
+   📱 手機版「零捲動・同屏滿版」終極自適應佈局 (100dvh 鎖定)
+   確保「動畫擂台 + 題目 + 4個選項」100% 呈現在同一畫面！
    ========================================================= */
 @media (max-width: 768px) {
+    /* 1. 壓縮頂部導覽列高度 */
+    .top-nav {
+        padding: 6px 10px !important;
+        min-height: 44px !important;
+    }
+    .brand {
+        font-size: 0.95rem !important;
+    }
+    .sub-brand {
+        display: none !important; /* 手機隱藏副標省空間 */
+    }
+    .nav-buttons button {
+        padding: 4px 8px !important;
+        font-size: 0.78rem !important;
+    }
+
+    /* 2. 主容器滿版緊湊化 */
     .app-container {
-        padding: 8px 8px 30px;
-        margin: 8px auto;
+        padding: 6px 8px !important;
+        margin: 0 auto !important;
     }
 
-    /* 擂台主戰場：改為更緊湊的彈性高度，避免超出手機螢幕 */
-    .arena-stage {
-        min-height: 200px;
-        padding: 10px;
-        gap: 8px;
+    /* 3. 當進入「擂台戰鬥頁 (#view-arena)」時，鎖定剛好一個手機螢幕高 */
+    #view-arena.view-section.active {
+        display: flex !important;
+        flex-direction: column !important;
+        height: calc(100dvh - 56px) !important; /* 扣除頂部導覽列後的完整手機可視高度 */
+        overflow: hidden !important;
+        gap: 6px !important;
     }
 
-    .fighter-avatar {
-        width: 58px;
-        height: 58px;
+    /* 若已到賽後結算畫面（有2張卡片以上且無擂台），恢復可正常上下滑動看詳解 */
+    #view-arena.view-section.active:not(:has(.arena-stage)) {
+        height: auto !important;
+        overflow: visible !important;
     }
 
-    .fighter-box h4 {
-        font-size: 0.85rem;
+    /* 4. 關鍵修正：強制擂台維持「左右對決（橫排）」，禁止變成垂直堆疊！ */
+    #view-arena .arena-stage {
+        flex: 0 0 auto !important;
+        display: flex !important;
+        flex-direction: row !important; /* 強制左、中、右並排 */
+        justify-content: space-between !important;
+        align-items: center !important;
+        min-height: 112px !important;
+        max-height: 125px !important;
+        padding: 8px 10px !important;
+        margin-bottom: 0 !important;
+        border-radius: 12px !important;
     }
 
-    /* 中央倒數圈與商品招牌縮小，確保手機不卡畫面 */
-    .timer-ring-wrapper {
-        width: 54px;
-        height: 54px;
+    /* 左右選手框緊湊化 */
+    #view-arena .fighter-box {
+        width: 34% !important;
+        max-width: 120px !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        text-align: center !important;
     }
-    .timer-text {
-        font-size: 0.85rem;
+    #view-arena .fighter-avatar-wrap {
+        margin: 0 auto !important;
     }
-    .center-product-banner {
-        font-size: 0.8rem;
-        padding: 3px 8px;
-        max-width: 180px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+    #view-arena .fighter-avatar {
+        width: 44px !important;
+        height: 44px !important;
+        border-width: 2px !important;
+    }
+    #view-arena .fighter-box h4 {
+        font-size: 0.75rem !important;
+        margin: 3px 0 2px !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+    #view-arena .fighter-box .nen-tag {
+        font-size: 0.62rem !important;
+        padding: 1px 5px !important;
+        display: inline-block !important;
+        max-width: 100% !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+    #view-arena .hp-bar-wrap {
+        height: 6px !important;
+        margin-top: 4px !important;
     }
 
-    /* 題目與選項容器：縮小留白，讓 4 個選項在手機一目了然 */
-    .glass-card {
-        padding: 14px;
-        margin-bottom: 12px;
-        border-radius: 12px;
+    /* 中央倒數圈與 VS 緊湊化 */
+    #view-arena .arena-center-panel {
+        width: 30% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 2px !important;
+    }
+    #view-arena .timer-ring-wrapper {
+        width: 42px !important;
+        height: 42px !important;
+    }
+    #view-arena .timer-text {
+        font-size: 0.75rem !important;
+    }
+    #view-arena .vs-title {
+        font-size: 0.9rem !important;
+        margin: 0 !important;
+        line-height: 1 !important;
+    }
+    #view-arena .center-product-banner {
+        font-size: 0.65rem !important;
+        padding: 2px 6px !important;
+        max-width: 100px !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
     }
 
-    .glass-card h3 {
-        font-size: 1.05rem !important;
-        margin-bottom: 10px !important;
-        line-height: 1.4 !important;
+    /* 5. 下方題目與選項區：自動填滿剩餘螢幕高度，內部彈性分配空間 */
+    #view-arena > .glass-card {
+        flex: 1 1 auto !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+        padding: 10px 12px !important;
+        margin-bottom: 0 !important;
+        overflow-y: auto !important; /* 萬一題目字數破百字時才局部微滾動，不影響上方擂台 */
     }
 
-    /* 選項按鈕：手機上縮短上下間距與字體，防止按鈕超出螢幕底部 */
-    .option-btn, 
-    .glass-card button:not(.btn-primary):not(.btn-secondary) {
-        padding: 10px 12px;
-        font-size: 0.92rem;
-        margin-bottom: 8px;
-        border-radius: 8px;
-        line-height: 1.4;
+    /* 樓層與題號資訊列 */
+    #view-arena > .glass-card > div:first-child {
+        margin-bottom: 4px !important;
+        gap: 4px !important;
+    }
+    #view-arena > .glass-card > div:first-child span {
+        font-size: 0.78rem !important;
+    }
+
+    /* 題目文字自動適應 */
+    #view-arena > .glass-card h3 {
+        font-size: 0.95rem !important;
+        line-height: 1.38 !important;
+        margin-bottom: 6px !important;
+        flex-shrink: 0 !important;
+    }
+
+    /* 4 個選項容器：平均分配高度 */
+    #view-arena > .glass-card > div:last-child {
+        flex: 1 1 auto !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-evenly !important;
+        gap: 6px !important;
+    }
+
+    /* 單一選項按鈕：高密度好點擊 */
+    #view-arena .option-btn {
+        padding: 8px 10px !important;
+        margin: 0 !important;
+        font-size: 0.86rem !important;
+        line-height: 1.3 !important;
+        border-radius: 8px !important;
+        display: flex !important;
+        align-items: center !important;
+        min-height: 38px !important;
     }
 }
