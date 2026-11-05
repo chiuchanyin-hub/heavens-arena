@@ -1,4 +1,4 @@
-// js/arena.js - 30秒圓形倒數、1F直升3F、3F起每次+3層(3,6,9,12,15...)、100%滿分通關煙火
+// js/arena.js - 30秒圓形倒數、1F直升3F、3F起每次+3層、排除2樓關主
 
 const ArenaModule = {
     state: {
@@ -16,29 +16,28 @@ const ArenaModule = {
         timeLeft: 30
     },
 
-    // 計算過關後的下一層樓數：1F 直升 3F，其餘樓層每次 +3 層 (3 -> 6 -> 9 -> 12 -> 15...)
+    // 晉級邏輯：1F 直升 3F，其餘每次 +3 層 (3 -> 6 -> 9 -> 12 -> 15...)
     getNextFloor(currentFloor) {
         const f = Number(currentFloor) || 1;
         if (f < 3) return 3;
         return Math.min(200, f + 3);
     },
 
+    // 關主命名對應：1F為第一層關主，3F為第三層關主，6F為第六層關主...
     getBossNameByFloor(floor) {
         const master = DEFAULT_FLOOR_MASTERS[floor];
         if (master && floor > 50) return master.name;
 
-        const digits = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
+        const digits = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
         let cn = '';
         if (floor <= 10) {
-            cn = floor === 10 ? '十' : digits[floor];
+            cn = digits[floor];
         } else if (floor < 20) {
             cn = '十' + digits[floor % 10];
-        } else if (floor <= 50) {
+        } else {
             const tens = Math.floor(floor / 10);
             const ones = floor % 10;
-            cn = digits[tens] + '十' + digits[ones];
-        } else {
-            cn = floor;
+            cn = digits[tens] + '十' + (ones > 0 ? digits[ones] : '');
         }
         return `第${cn}層關主`;
     },
@@ -128,8 +127,6 @@ const ArenaModule = {
         const q = this.state.questions[this.state.currentIndex];
         const displayFloorName = q.floorName || this.state.floorName;
         const totalQ = this.state.questions.length;
-
-        // 預覽過關後晉升的目標樓層
         const targetNextFloor = this.getNextFloor(user.floor);
 
         container.innerHTML = `
@@ -599,7 +596,6 @@ const ArenaModule = {
         const oldFloor = Number(user.floor) || 1;
 
         if (passed) {
-            // ⚡ 1F 過關直接跳到 3F；3F 之後每次過關 +3 層 (3 -> 6 -> 9 -> 12 -> 15...)
             user.floor = this.getNextFloor(oldFloor);
             user.wins = (user.wins || 0) + 1;
             DataStore.updateUser(user);

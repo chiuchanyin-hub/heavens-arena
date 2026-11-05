@@ -1,4 +1,4 @@
-// js/admin.js - 支援一鍵批次移動整層題目到其他樓層、單題編輯與挑戰者管理
+// js/admin.js - 支援修改後台密碼、一鍵匯出 data.js、批次移動樓層、單題編輯與挑戰者管理（無任何預設密碼提示）
 
 const AdminModule = {
     isAuthenticated: false,
@@ -13,7 +13,7 @@ const AdminModule = {
             container.innerHTML = `
                 <div class="glass-card" style="max-width:480px; margin:40px auto;">
                     <h2>🔒 天空競技場・管理員後台驗證</h2>
-                    <p style="color:var(--text-muted); margin:10px 0 18px;">請輸入後台管理密碼（預設密碼：<strong>8888</strong>）</p>
+                    <p style="color:var(--text-muted); margin:10px 0 18px;">請輸入後台管理員密碼以進行系統設定</p>
                     <div class="form-group">
                         <input type="password" id="admin-pwd-input" placeholder="請輸入管理員密碼">
                     </div>
@@ -28,7 +28,6 @@ const AdminModule = {
 
         const targetUser = this.editingUser ? users.find(u => u.username === this.editingUser) : null;
 
-        // 將題庫依照「樓層 (floor)」分組
         const floorGroups = {};
         questions.forEach(q => {
             const f = Number(q.floor) || 1;
@@ -44,6 +43,26 @@ const AdminModule = {
         const editingQuestion = this.editingId ? questions.find(q => q.id === this.editingId) : null;
 
         container.innerHTML = `
+            <!-- 頂部雲端同步與後台密碼修改專區 -->
+            <div class="lobby-grid" style="margin-bottom:20px;">
+                <div class="glass-card" style="background:rgba(56, 189, 248, 0.1); border-color:var(--accent-blue); margin-bottom:0;">
+                    <h3 style="color:var(--accent-blue); margin-bottom:6px;">📦 網站題庫與名單雲端同步工具</h3>
+                    <p style="font-size:0.88rem; color:var(--text-muted); margin-bottom:12px;">匯入或修改題庫後可打包更新至網站供所有夥伴使用。</p>
+                    <button class="btn-primary full-width" onclick="AdminModule.exportDataJsFile()" style="background:linear-gradient(135deg, #38bdf8, #0284c7); color:#fff;">
+                        📦 匯出最新 data.js (同步至全體業務手機)
+                    </button>
+                </div>
+
+                <div class="glass-card" style="background:rgba(245, 158, 11, 0.1); border-color:var(--gold); margin-bottom:0;">
+                    <h3 style="color:var(--gold-light); margin-bottom:6px;">🔑 修改後台管理員密碼</h3>
+                    <p style="font-size:0.88rem; color:var(--text-muted); margin-bottom:10px;">變更進入此管理後台的安全驗證密碼。</p>
+                    <div style="display:flex; gap:8px;">
+                        <input type="password" id="new-admin-pwd" placeholder="請輸入新後台密碼" style="flex:1;">
+                        <button class="btn-primary" onclick="AdminModule.changeAdminPassword()" style="white-space:nowrap;">更新密碼</button>
+                    </div>
+                </div>
+            </div>
+
             <div class="lobby-grid">
                 <!-- 左欄：新增 / 編輯挑戰者帳號 -->
                 <div class="glass-card" id="user-form-card">
@@ -259,8 +278,19 @@ const AdminModule = {
             this.isAuthenticated = true;
             this.render();
         } else {
-            alert('後台密碼錯誤！（預設密碼為 8888）');
+            alert('後台密碼錯誤！');
         }
+    },
+
+    changeAdminPassword() {
+        const newPwd = document.getElementById('new-admin-pwd').value.trim();
+        if (!newPwd) {
+            alert('請輸入新的後台密碼！');
+            return;
+        }
+        localStorage.setItem('ha_admin_pwd', newPwd);
+        document.getElementById('new-admin-pwd').value = '';
+        alert('🔑 後台管理員密碼已成功更新！');
     },
 
     setFloorFilter(val) {
@@ -268,7 +298,68 @@ const AdminModule = {
         this.render();
     },
 
-    // 一鍵批次移動整層題目到其他樓層
+    exportDataJsFile() {
+        const currentUsers = DataStore.getUsers();
+        const currentQuestions = DataStore.getQuestions();
+
+        const fileContent = `// js/data.js - 自動封裝最新雲端題庫與挑戰者名單
+const AVATAR_CONFIG = ${JSON.stringify(AVATAR_CONFIG, null, 4)};
+
+const DEFAULT_FLOOR_MASTERS = ${JSON.stringify(DEFAULT_FLOOR_MASTERS, null, 4)};
+
+const DEFAULT_QUESTIONS = ${JSON.stringify(currentQuestions, null, 4)};
+
+const DEFAULT_USERS = ${JSON.stringify(currentUsers, null, 4)};
+
+const DataStore = {
+    init() {
+        const DATA_VERSION = '${Date.now()}';
+        if (localStorage.getItem('ha_data_version') !== DATA_VERSION) {
+            localStorage.setItem('ha_questions', JSON.stringify(DEFAULT_QUESTIONS));
+            if (!localStorage.getItem('ha_users')) {
+                localStorage.setItem('ha_users', JSON.stringify(DEFAULT_USERS));
+            }
+            localStorage.setItem('ha_data_version', DATA_VERSION);
+        }
+        if (!localStorage.getItem('ha_admin_pwd')) {
+            localStorage.setItem('ha_admin_pwd', '8888');
+        }
+    },
+    getUsers() { return JSON.parse(localStorage.getItem('ha_users') || '[]'); },
+    saveUsers(users) { localStorage.setItem('ha_users', JSON.stringify(users)); },
+    getQuestions() { return JSON.parse(localStorage.getItem('ha_questions') || '[]'); },
+    saveQuestions(questions) { localStorage.setItem('ha_questions', JSON.stringify(questions)); },
+    getCurrentUser() {
+        const username = sessionStorage.getItem('ha_current_user');
+        if (!username) return null;
+        return this.getUsers().find(u => u.username === username) || null;
+    },
+    updateUser(updatedUser) {
+        const users = this.getUsers().map(u => u.username === updatedUser.username ? updatedUser : u);
+        this.saveUsers(users);
+    },
+    getAvatarInfo(user) {
+        const base = AVATAR_CONFIG.find(a => a.id === user.roleId) || AVATAR_CONFIG[0];
+        return {
+            ...base,
+            displayImg: (user.floor >= 30 && user.customAvatar) ? user.customAvatar : base.img
+        };
+    }
+};
+
+DataStore.init();
+`;
+
+        const blob = new Blob([fileContent], { type: 'application/javascript;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'data.js';
+        a.click();
+        URL.revokeObjectURL(url);
+        alert('✅ 已成功匯出最新 data.js！請將此檔案覆蓋至專案的 js/data.js，並在終端機輸入 git push 推送至網站，全體夥伴的手機就會同步看到最新題庫了！');
+    },
+
     moveFloorPrompt(fromFloor) {
         const targetStr = prompt(`請輸入要將「第 ${fromFloor} 層」的所有題目移動到哪一個目標樓層數字（例如：2）：`);
         if (!targetStr) return;
