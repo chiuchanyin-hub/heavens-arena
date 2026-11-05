@@ -171,7 +171,7 @@
                     alert('帳號或密碼錯誤！請確認後重試。');
                     return;
                 }
-                sessionStorage.setItem('ha_current_user', found.username);
+                localStorage.setItem('ha_current_user', found.username);
                 this.renderLobby();
             },
 

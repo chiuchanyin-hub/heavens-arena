@@ -391,3 +391,68 @@ textarea {
         text-align: center;
     }
 }
+/* =========================================================
+   手機螢幕長度與擂台排版自適應優化 (RWD)
+   ========================================================= */
+@media (max-width: 768px) {
+    .app-container {
+        padding: 8px 8px 30px;
+        margin: 8px auto;
+    }
+
+    /* 擂台主戰場：改為更緊湊的彈性高度，避免超出手機螢幕 */
+    .arena-stage {
+        min-height: 200px;
+        padding: 10px;
+        gap: 8px;
+    }
+
+    .fighter-avatar {
+        width: 58px;
+        height: 58px;
+    }
+
+    .fighter-box h4 {
+        font-size: 0.85rem;
+    }
+
+    /* 中央倒數圈與商品招牌縮小，確保手機不卡畫面 */
+    .timer-ring-wrapper {
+        width: 54px;
+        height: 54px;
+    }
+    .timer-text {
+        font-size: 0.85rem;
+    }
+    .center-product-banner {
+        font-size: 0.8rem;
+        padding: 3px 8px;
+        max-width: 180px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* 題目與選項容器：縮小留白，讓 4 個選項在手機一目了然 */
+    .glass-card {
+        padding: 14px;
+        margin-bottom: 12px;
+        border-radius: 12px;
+    }
+
+    .glass-card h3 {
+        font-size: 1.05rem !important;
+        margin-bottom: 10px !important;
+        line-height: 1.4 !important;
+    }
+
+    /* 選項按鈕：手機上縮短上下間距與字體，防止按鈕超出螢幕底部 */
+    .option-btn, 
+    .glass-card button:not(.btn-primary):not(.btn-secondary) {
+        padding: 10px 12px;
+        font-size: 0.92rem;
+        margin-bottom: 8px;
+        border-radius: 8px;
+        line-height: 1.4;
+    }
+}
