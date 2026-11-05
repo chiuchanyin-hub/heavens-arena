@@ -1,4 +1,4 @@
-// js/arena.js - 30秒圓形倒數、1F直升3F、3F起每次+3層、排除2樓關主
+// js/arena.js - 30秒圓形倒數、1F直升3F、3F起每次+3層、自動尋題防卡關與念能力動畫引擎
 
 const ArenaModule = {
     state: {
@@ -88,26 +88,44 @@ const ArenaModule = {
         if (!user) return;
 
         const allQuestions = DataStore.getQuestions();
-        const pool = allQuestions.filter(q => Number(q.floor) === Number(user.floor));
-
-        if (pool.length === 0) {
-            alert(`目前第 ${user.floor} 層樓還沒有題目喔！請至「⚙️ 後台設定」匯入樓層為 ${user.floor} 的題目。`);
+        if (allQuestions.length === 0) {
+            alert('目前題庫中沒有任何題目！請至「⚙️ 後台設定」匯入題庫。');
             return;
         }
 
-        const currentFloorName = pool[0].floorName || `第 ${user.floor} 層商品擂台`;
+        // 1. 先找當前樓層的題目
+        let targetFloor = Number(user.floor) || 1;
+        let pool = allQuestions.filter(q => Number(q.floor) === targetFloor);
+
+        // 2. 防卡關機制：若當前樓層無題目，自動尋找下一個有題目的樓層
+        if (pool.length === 0) {
+            const availableFloors = [...new Set(allQuestions.map(q => Number(q.floor) || 1))].sort((a, b) => a - b);
+            const nextAvailable = availableFloors.find(f => f >= targetFloor) || availableFloors[availableFloors.length - 1];
+            
+            if (nextAvailable) {
+                targetFloor = nextAvailable;
+                pool = allQuestions.filter(q => Number(q.floor) === targetFloor);
+            }
+        }
+
+        if (pool.length === 0) {
+            alert(`目前題庫中找不到任何有效題目，請至「⚙️ 後台設定」確認題庫內容。`);
+            return;
+        }
+
+        const currentFloorName = pool[0].floorName || `第 ${targetFloor} 層商品擂台`;
         const shuffled = [...pool].sort(() => Math.random() - 0.5);
 
-        const bossData = DEFAULT_FLOOR_MASTERS[user.floor];
-        const randomOpponent = AVATAR_CONFIG[user.floor % AVATAR_CONFIG.length] || AVATAR_CONFIG[5];
+        const bossData = DEFAULT_FLOOR_MASTERS[targetFloor];
+        const randomOpponent = AVATAR_CONFIG[targetFloor % AVATAR_CONFIG.length] || AVATAR_CONFIG[5];
 
         this.state = {
             questions: shuffled,
             currentIndex: 0,
             answersLog: [],
             floorName: currentFloorName,
-            enemyName: this.getBossNameByFloor(user.floor),
-            enemyTitle: user.floor >= 50 && bossData ? bossData.title : '樓層守門關主',
+            enemyName: this.getBossNameByFloor(targetFloor),
+            enemyTitle: targetFloor >= 50 && bossData ? bossData.title : '樓層守門關主',
             enemyAvatar: bossData ? bossData.avatar : randomOpponent.img,
             enemyHp: 100,
             playerHp: 100,
