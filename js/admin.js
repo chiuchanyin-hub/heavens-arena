@@ -1,4 +1,4 @@
-// js/admin.js - 支援修改後台密碼、一鍵匯出 data.js、批次移動樓層、單題編輯與挑戰者管理（無任何預設密碼提示）
+// js/admin.js - 修復手機一般模式帳號同步、支援修改後台密碼、一鍵匯出 data.js、批次移動樓層
 
 const AdminModule = {
     isAuthenticated: false,
@@ -25,7 +25,6 @@ const AdminModule = {
 
         const users = DataStore.getUsers();
         const questions = DataStore.getQuestions();
-
         const targetUser = this.editingUser ? users.find(u => u.username === this.editingUser) : null;
 
         const floorGroups = {};
@@ -43,19 +42,18 @@ const AdminModule = {
         const editingQuestion = this.editingId ? questions.find(q => q.id === this.editingId) : null;
 
         container.innerHTML = `
-            <!-- 頂部雲端同步與後台密碼修改專區 -->
             <div class="lobby-grid" style="margin-bottom:20px;">
                 <div class="glass-card" style="background:rgba(56, 189, 248, 0.1); border-color:var(--accent-blue); margin-bottom:0;">
                     <h3 style="color:var(--accent-blue); margin-bottom:6px;">📦 網站題庫與名單雲端同步工具</h3>
-                    <p style="font-size:0.88rem; color:var(--text-muted); margin-bottom:12px;">匯入或修改題庫後可打包更新至網站供所有夥伴使用。</p>
+                    <p style="font-size:0.88rem; color:var(--text-muted); margin-bottom:12px;">匯入題庫或新增挑戰者帳號後，點擊下方按鈕打包並覆蓋回專案 js/data.js。</p>
                     <button class="btn-primary full-width" onclick="AdminModule.exportDataJsFile()" style="background:linear-gradient(135deg, #38bdf8, #0284c7); color:#fff;">
-                        📦 匯出最新 data.js (同步至全體業務手機)
+                        📦 匯出最新 data.js (強制同步至全體業務手機)
                     </button>
                 </div>
 
                 <div class="glass-card" style="background:rgba(245, 158, 11, 0.1); border-color:var(--gold); margin-bottom:0;">
                     <h3 style="color:var(--gold-light); margin-bottom:6px;">🔑 修改後台管理員密碼</h3>
-                    <p style="font-size:0.88rem; color:var(--text-muted); margin-bottom:10px;">變更進入此管理後台的安全驗證密碼。</p>
+                    <p style="font-size:0.88rem; color:var(--text-muted); margin-bottom:10px;">變更進入此管理後台的安全驗證密碼（匯出 data.js 時會一併同步）。</p>
                     <div style="display:flex; gap:8px;">
                         <input type="password" id="new-admin-pwd" placeholder="請輸入新後台密碼" style="flex:1;">
                         <button class="btn-primary" onclick="AdminModule.changeAdminPassword()" style="white-space:nowrap;">更新密碼</button>
@@ -290,7 +288,7 @@ const AdminModule = {
         }
         localStorage.setItem('ha_admin_pwd', newPwd);
         document.getElementById('new-admin-pwd').value = '';
-        alert('🔑 後台管理員密碼已成功更新！');
+        alert('🔑 後台管理員密碼已更新！若要同步到雲端網站，請記得點擊左方「匯出最新 data.js」。');
     },
 
     setFloorFilter(val) {
@@ -298,11 +296,13 @@ const AdminModule = {
         this.render();
     },
 
+    // 📦 關鍵修正：匯出時強制將最新帳號清單與密碼同步進手機（同時保留業務既有闖關最高樓層）
     exportDataJsFile() {
         const currentUsers = DataStore.getUsers();
         const currentQuestions = DataStore.getQuestions();
+        const currentAdminPwd = localStorage.getItem('ha_admin_pwd') || '8888';
 
-        const fileContent = `// js/data.js - 自動封裝最新雲端題庫與挑戰者名單
+        const fileContent = `// js/data.js - 自動封裝最新雲端題庫與挑戰者名單（支援手機一般模式強制同步）
 const AVATAR_CONFIG = ${JSON.stringify(AVATAR_CONFIG, null, 4)};
 
 const DEFAULT_FLOOR_MASTERS = ${JSON.stringify(DEFAULT_FLOOR_MASTERS, null, 4)};
@@ -311,31 +311,56 @@ const DEFAULT_QUESTIONS = ${JSON.stringify(currentQuestions, null, 4)};
 
 const DEFAULT_USERS = ${JSON.stringify(currentUsers, null, 4)};
 
+const DEFAULT_ADMIN_PWD = ${JSON.stringify(currentAdminPwd)};
+
 const DataStore = {
     init() {
         const DATA_VERSION = '${Date.now()}';
         if (localStorage.getItem('ha_data_version') !== DATA_VERSION) {
+            // 1. 強制更新最新題庫
             localStorage.setItem('ha_questions', JSON.stringify(DEFAULT_QUESTIONS));
-            if (!localStorage.getItem('ha_users')) {
-                localStorage.setItem('ha_users', JSON.stringify(DEFAULT_USERS));
-            }
+
+            // 2. 智慧合併帳號名單：將新帳號與最新密碼強制寫入手機，同時保留該員在手機上已爬到的更高樓層與勝場
+            const localUsers = JSON.parse(localStorage.getItem('ha_users') || '[]');
+            const mergedUsers = DEFAULT_USERS.map(defUser => {
+                const existing = localUsers.find(u => String(u.username).toLowerCase() === String(defUser.username).toLowerCase());
+                if (existing) {
+                    return {
+                        ...defUser,
+                        floor: Math.max(Number(defUser.floor) || 1, Number(existing.floor) || 1),
+                        wins: Math.max(Number(defUser.wins) || 0, Number(existing.wins) || 0),
+                        customAvatar: existing.customAvatar || defUser.customAvatar || ''
+                    };
+                }
+                return defUser;
+            });
+            localStorage.setItem('ha_users', JSON.stringify(mergedUsers));
+
+            // 3. 同步後台密碼與版本號
+            localStorage.setItem('ha_admin_pwd', DEFAULT_ADMIN_PWD);
             localStorage.setItem('ha_data_version', DATA_VERSION);
         }
         if (!localStorage.getItem('ha_admin_pwd')) {
-            localStorage.setItem('ha_admin_pwd', '8888');
+            localStorage.setItem('ha_admin_pwd', DEFAULT_ADMIN_PWD);
         }
     },
-    getUsers() { return JSON.parse(localStorage.getItem('ha_users') || '[]'); },
+    getUsers() {
+        const list = JSON.parse(localStorage.getItem('ha_users') || '[]');
+        return list.length > 0 ? list : DEFAULT_USERS;
+    },
     saveUsers(users) { localStorage.setItem('ha_users', JSON.stringify(users)); },
-    getQuestions() { return JSON.parse(localStorage.getItem('ha_questions') || '[]'); },
+    getQuestions() {
+        const list = JSON.parse(localStorage.getItem('ha_questions') || '[]');
+        return list.length > 0 ? list : DEFAULT_QUESTIONS;
+    },
     saveQuestions(questions) { localStorage.setItem('ha_questions', JSON.stringify(questions)); },
     getCurrentUser() {
-        const username = sessionStorage.getItem('ha_current_user');
+        const username = localStorage.getItem('ha_current_user') || sessionStorage.getItem('ha_current_user');
         if (!username) return null;
-        return this.getUsers().find(u => u.username === username) || null;
+        return this.getUsers().find(u => String(u.username).toLowerCase() === String(username).toLowerCase()) || null;
     },
     updateUser(updatedUser) {
-        const users = this.getUsers().map(u => u.username === updatedUser.username ? updatedUser : u);
+        const users = this.getUsers().map(u => String(u.username).toLowerCase() === String(updatedUser.username).toLowerCase() ? updatedUser : u);
         this.saveUsers(users);
     },
     getAvatarInfo(user) {
@@ -357,11 +382,11 @@ DataStore.init();
         a.download = 'data.js';
         a.click();
         URL.revokeObjectURL(url);
-        alert('✅ 已成功匯出最新 data.js！請將此檔案覆蓋至專案的 js/data.js，並在終端機輸入 git push 推送至網站，全體夥伴的手機就會同步看到最新題庫了！');
+        alert('✅ 已匯出最新 data.js！請將此檔案覆蓋至專案的 js/data.js 並 git push，手機一般模式打開就會自動載入所有最新帳號了！');
     },
 
     moveFloorPrompt(fromFloor) {
-        const targetStr = prompt(`請輸入要將「第 ${fromFloor} 層」的所有題目移動到哪一個目標樓層數字（例如：2）：`);
+        const targetStr = prompt(`請輸入要將「第 ${fromFloor} 層」的所有題目移動到哪一個目標樓層數字（例如：3）：`);
         if (!targetStr) return;
         const targetFloor = parseInt(targetStr.trim(), 10);
         if (isNaN(targetFloor) || targetFloor < 1 || targetFloor > 200) {
@@ -411,7 +436,7 @@ DataStore.init();
         }
 
         const users = DataStore.getUsers();
-        const existingIdx = users.findIndex(u => u.username === username);
+        const existingIdx = users.findIndex(u => String(u.username).toLowerCase() === String(username).toLowerCase());
 
         if (existingIdx >= 0) {
             users[existingIdx] = {

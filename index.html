@@ -23,16 +23,9 @@
 
     <!-- 主內容區 (RWD 自適應容器) -->
     <main class="app-container">
-        <!-- 模組 1：競技大廳與登入區 -->
         <section id="view-lobby" class="view-section active"></section>
-
-        <!-- 模組 2：獨立戰鬥與念能力動畫擂台 -->
         <section id="view-arena" class="view-section"></section>
-
-        <!-- 模組 3：獨立各樓層挑戰者英雄榜 -->
         <section id="view-leaderboard" class="view-section"></section>
-
-        <!-- 模組 4：獨立密碼保護後台管理系統 -->
         <section id="view-admin" class="view-section"></section>
     </main>
 
@@ -76,7 +69,7 @@
                             <p class="hint-text" style="color:var(--text-muted); margin:8px 0 16px;">踏入高達 200 層的天空競技場，透過商品問答施展念能力晉級！</p>
                             <div class="form-group">
                                 <label>挑戰者帳號</label>
-                                <input type="text" id="login-user" placeholder="請輸入帳號">
+                                <input type="text" id="login-user" placeholder="請輸入帳號" autocapitalize="none" autocorrect="off">
                             </div>
                             <div class="form-group">
                                 <label>挑戰者密碼</label>
@@ -166,17 +159,33 @@
             login() {
                 const u = document.getElementById('login-user').value.trim();
                 const p = document.getElementById('login-pwd').value.trim();
-                const found = DataStore.getUsers().find(user => user.username === u && user.password === p);
+
+                // 先從手機 localStorage 找，若因為舊快取找不到，直接從最新 DEFAULT_USERS 雲端名單比對並自動補進手機！
+                let users = DataStore.getUsers();
+                let found = users.find(user => String(user.username).trim().toLowerCase() === u.toLowerCase() && String(user.password).trim() === p);
+
+                if (!found && typeof DEFAULT_USERS !== 'undefined') {
+                    const defaultFound = DEFAULT_USERS.find(user => String(user.username).trim().toLowerCase() === u.toLowerCase() && String(user.password).trim() === p);
+                    if (defaultFound) {
+                        found = defaultFound;
+                        const others = users.filter(user => String(user.username).trim().toLowerCase() !== u.toLowerCase());
+                        others.push(defaultFound);
+                        DataStore.saveUsers(others);
+                    }
+                }
+
                 if (!found) {
                     alert('帳號或密碼錯誤！請確認後重試。');
                     return;
                 }
                 localStorage.setItem('ha_current_user', found.username);
+                sessionStorage.setItem('ha_current_user', found.username);
                 this.renderLobby();
             },
 
             logout() {
                 localStorage.removeItem('ha_current_user');
+                sessionStorage.removeItem('ha_current_user');
                 this.renderLobby();
             },
 
