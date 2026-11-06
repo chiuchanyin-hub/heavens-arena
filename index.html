@@ -29,11 +29,15 @@
         <section id="view-admin" class="view-section"></section>
     </main>
 
-    <!-- 依序載入獨立 JS 模組 -->
-    <script src="js/data.js"></script>
-    <script src="js/arena.js"></script>
-    <script src="js/leaderboard.js"></script>
-    <script src="js/admin.js"></script>
+    <!-- 關鍵破快取：動態載入 JS 模組，加上時間戳記 ?v= 強制手機瀏覽器永遠抓取雲端最新 data.js！ -->
+    <script>
+        const ver = Date.now();
+        document.write('<script src="js/data.js?v=' + ver + '"><\/script>');
+        document.write('<script src="js/arena.js?v=' + ver + '"><\/script>');
+        document.write('<script src="js/leaderboard.js?v=' + ver + '"><\/script>');
+        document.write('<script src="js/admin.js?v=' + ver + '"><\/script>');
+    </script>
+
     <script>
         const App = {
             switchTab(tabName) {
@@ -63,19 +67,26 @@
                 const user = DataStore.getCurrentUser();
 
                 if (!user) {
+                    const totalUsersCount = DataStore.getUsers().length;
                     container.innerHTML = `
                         <div class="glass-card login-card">
                             <h2>🔥 挑戰者登錄櫃檯</h2>
                             <p class="hint-text" style="color:var(--text-muted); margin:8px 0 16px;">踏入高達 200 層的天空競技場，透過商品問答施展念能力晉級！</p>
                             <div class="form-group">
                                 <label>挑戰者帳號</label>
-                                <input type="text" id="login-user" placeholder="請輸入帳號" autocapitalize="none" autocorrect="off">
+                                <input type="text" id="login-user" placeholder="請輸入帳號" autocapitalize="none" autocorrect="off" spellcheck="false">
                             </div>
                             <div class="form-group">
                                 <label>挑戰者密碼</label>
                                 <input type="password" id="login-pwd" placeholder="請輸入密碼">
                             </div>
                             <button class="btn-primary full-width" onclick="App.login()">進入天空競技場</button>
+
+                            <div style="margin-top:12px; text-align:center;">
+                                <button class="btn-secondary" style="font-size:0.8rem; padding:6px 12px; width:100%;" onclick="App.forceSyncCloudData()">
+                                    🔄 無法登入？點此強制同步最新雲端名單 (目前載入 ${totalUsersCount} 人)
+                                </button>
+                            </div>
 
                             <hr class="divider">
                             <h3>🌟 七大念能力初始頭像一覽（由左至右）</h3>
@@ -156,28 +167,47 @@
                 `;
             },
 
-            login() {
-                const u = document.getElementById('login-user').value.trim();
-                const p = document.getElementById('login-pwd').value.trim();
-
-                // 先從手機 localStorage 找，若因為舊快取找不到，直接從最新 DEFAULT_USERS 雲端名單比對並自動補進手機！
-                let users = DataStore.getUsers();
-                let found = users.find(user => String(user.username).trim().toLowerCase() === u.toLowerCase() && String(user.password).trim() === p);
-
-                if (!found && typeof DEFAULT_USERS !== 'undefined') {
-                    const defaultFound = DEFAULT_USERS.find(user => String(user.username).trim().toLowerCase() === u.toLowerCase() && String(user.password).trim() === p);
-                    if (defaultFound) {
-                        found = defaultFound;
-                        const others = users.filter(user => String(user.username).trim().toLowerCase() !== u.toLowerCase());
-                        others.push(defaultFound);
-                        DataStore.saveUsers(others);
-                    }
+            // 強制清除手機舊快取並重新載入雲端最新 DEFAULT_USERS 與 DEFAULT_QUESTIONS
+            forceSyncCloudData() {
+                localStorage.removeItem('ha_data_version');
+                if (typeof DEFAULT_USERS !== 'undefined') {
+                    localStorage.setItem('ha_users', JSON.stringify(DEFAULT_USERS));
                 }
+                if (typeof DEFAULT_QUESTIONS !== 'undefined') {
+                    localStorage.setItem('ha_questions', JSON.stringify(DEFAULT_QUESTIONS));
+                }
+                alert('✅ 已強制同步雲端最新名單與題庫！頁面即將重新整理。');
+                window.location.reload(true);
+            },
+
+            login() {
+                // 自動過濾所有前後空白與隱藏字元，並將帳號轉為字串比對（例如 01 與 1 不搞混）
+                const u = document.getElementById('login-user').value.replace(/\s+/g, '').toLowerCase();
+                const p = document.getElementById('login-pwd').value.replace(/\s+/g, '');
+
+                // 同時搜尋手機 localStorage 與雲端 DEFAULT_USERS，只要任一邊有就放行！
+                const localUsers = DataStore.getUsers();
+                const cloudUsers = (typeof DEFAULT_USERS !== 'undefined') ? DEFAULT_USERS : [];
+                const combinedUsers = [...cloudUsers, ...localUsers];
+
+                const found = combinedUsers.find(user => {
+                    const dbUser = String(user.username).replace(/\s+/g, '').toLowerCase();
+                    const dbPass = String(user.password).replace(/\s+/g, '');
+                    return dbUser === u && dbPass === p;
+                });
 
                 if (!found) {
-                    alert('帳號或密碼錯誤！請確認後重試。');
+                    const availableNames = [...new Set(combinedUsers.map(x => x.username))].join(', ');
+                    alert(`帳號或密碼錯誤！\n目前手機讀取到的有效帳號有：【 ${availableNames} 】\n\n若裡面沒有您的帳號，請先點擊下方「🔄 強制同步最新雲端名單」，或確認電腦後台已匯出最新 data.js 並 git push！`);
                     return;
                 }
+
+                // 確保該帳號已寫入手機 localStorage
+                if (!localUsers.some(x => String(x.username).toLowerCase() === u)) {
+                    localUsers.push(found);
+                    DataStore.saveUsers(localUsers);
+                }
+
                 localStorage.setItem('ha_current_user', found.username);
                 sessionStorage.setItem('ha_current_user', found.username);
                 this.renderLobby();
