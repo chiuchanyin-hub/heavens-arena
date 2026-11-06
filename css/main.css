@@ -559,3 +559,115 @@ textarea {
         align-items: center !important;
     }
 }
+/* =========================================================
+   煜承團隊 專屬小 LOGO 與導覽列樣式微調
+   ========================================================= */
+
+/* 1. 導覽列標題容器 */
+.top-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.85) 100%);
+    backdrop-filter: blur(12px);
+    border-bottom: 2px solid rgba(245, 158, 11, 0.3); /* 金橘色細邊 */
+    padding: 10px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* 2. 整合 LOGO 的 Brand 區塊 */
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* 圖與文的距離 */
+}
+
+/* 3. 專屬小 LOGO 特效 */
+.team-logo {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.6)); /* 外發光特效 */
+    animation: pulseGlow 3s infinite ease-in-out;
+}
+
+/* LOGO 自然微發光呼吸動畫 */
+@keyframes pulseGlow {
+    0%, 100% { filter: drop-shadow(0 0 5px rgba(245, 158, 11, 0.5)); }
+    50% { filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.9)); }
+}
+
+/* 4. LOGO 文字群組 */
+.brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+}
+
+/* 「煜承團隊」主字 */
+.team-title {
+    font-size: 1.1rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, #fde047 0%, #f97316 100%); /* 煜承金色漸層 */
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: 1px;
+}
+
+/* 「天空競技場」次字 */
+.arena-title {
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: #e2e8f0;
+    letter-spacing: 0.5px;
+}
+
+/* 「商品實戰修練塔」副標 */
+.top-nav .sub-brand {
+    font-size: 0.7rem;
+    color: var(--gold-light);
+    font-weight: 500;
+    margin-top: 1px;
+    opacity: 0.95;
+}
+
+/* =========================================================
+   手機版 (max-width: 768px) 小 LOGO 響應式排版調整
+   ========================================================= */
+@media (max-width: 768px) {
+    .top-nav {
+        padding: 6px 10px !important;
+        min-height: 50px !important;
+    }
+
+    /* 手機上 LOGO 尺寸稍作壓縮，防擠壓 */
+    .team-logo {
+        width: 28px !important;
+        height: 28px !important;
+    }
+
+    .brand-text {
+        gap: 0px !important;
+    }
+
+    .team-title {
+        font-size: 0.88rem !important;
+    }
+
+    .arena-title {
+        font-size: 0.72rem !important;
+    }
+
+    /* 手機上過長的副標自動隱藏以節省操作空間 */
+    .top-nav .sub-brand {
+        display: none !important;
+    }
+
+    .nav-buttons button {
+        padding: 5px 8px !important;
+        font-size: 0.75rem !important;
+    }
+}

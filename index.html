@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>天空競技場｜業務商品修練大賽</title>
+    <title>煜承團隊｜天空競技場・商品實戰修練塔</title>
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/animation.css">
     <!-- 引入 Excel (SheetJS) 與 PDF (pdf.js) 前端解析庫 -->
@@ -11,9 +11,16 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
 <body>
-    <!-- 頂部導覽列 -->
+    <!-- 頂部導覽列 (整合煜承團隊專屬 LOGO) -->
     <header class="top-nav">
-        <div class="brand">⚡ 天空競技場 <span class="sub-brand">商品實戰修練塔</span></div>
+        <div class="brand">
+            <img class="team-logo" src="assets/logo.png" alt="煜承團隊" onerror="this.style.display='none'">
+            <div class="brand-text">
+                <span class="team-title">煜承團隊</span>
+                <span class="arena-title">天空競技場</span>
+                <span class="sub-brand">商品實戰修練塔</span>
+            </div>
+        </div>
         <nav class="nav-buttons">
             <button onclick="App.switchTab('lobby')" id="btn-lobby" class="active">🏰 競技大廳</button>
             <button onclick="App.switchTab('leaderboard')" id="btn-leaderboard">🏆 樓層英雄榜</button>
@@ -181,7 +188,7 @@
             },
 
             login() {
-                // 自動過濾所有前後空白與隱藏字元，並將帳號轉為字串比對（例如 01 與 1 不搞混）
+                // 自動過濾所有前後空白與隱藏字元，並將帳號轉為字串比對
                 const u = document.getElementById('login-user').value.replace(/\s+/g, '').toLowerCase();
                 const p = document.getElementById('login-pwd').value.replace(/\s+/g, '');
 
