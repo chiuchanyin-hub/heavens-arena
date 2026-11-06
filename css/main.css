@@ -671,3 +671,196 @@ textarea {
         font-size: 0.75rem !important;
     }
 }
+/* =========================================================
+   🔥 煜承團隊 LOGO 巨型主視覺、擂台中央圖騰與背景整合樣式
+   ========================================================= */
+
+/* 1. 全頁固定式底層大浮水印（任何頁面都看得到團隊圖騰） */
+.global-bg-watermark {
+    position: fixed;
+    top: 52%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(85vw, 520px);
+    height: min(85vw, 520px);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.12;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.global-bg-watermark img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 50%;
+    mix-blend-mode: lighten;
+    filter: drop-shadow(0 0 30px rgba(245, 158, 11, 0.5));
+}
+
+/* 確保主內容區浮在背景圖騰之上 */
+.app-container {
+    position: relative;
+    z-index: 2;
+}
+
+/* 2. 登入櫃檯正中央：巨型發光「煜承團隊」主視覺 */
+.hero-logo-showcase {
+    text-align: center;
+    margin: 4px auto 20px;
+    position: relative;
+    padding: 10px 0;
+}
+.hero-logo-img {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 3px solid var(--gold);
+    box-shadow: 0 0 28px rgba(245, 158, 11, 0.65), inset 0 0 15px rgba(254, 240, 138, 0.5);
+    animation: heroLogoFloat 3.5s ease-in-out infinite;
+    background: #0f172a;
+}
+@keyframes heroLogoFloat {
+    0%, 100% {
+        transform: translateY(0) scale(1);
+        box-shadow: 0 0 25px rgba(245, 158, 11, 0.6);
+    }
+    50% {
+        transform: translateY(-5px) scale(1.04);
+        box-shadow: 0 0 42px rgba(249, 115, 22, 0.95);
+    }
+}
+.hero-logo-title {
+    font-size: 1.45rem;
+    font-weight: 900;
+    margin-top: 10px;
+    background: linear-gradient(135deg, #fef08a 0%, #f59e0b 50%, #f97316 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: 1.5px;
+    text-shadow: 0 2px 15px rgba(245, 158, 11, 0.35);
+}
+.hero-logo-subtitle {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+/* 3. 競技大廳頂部：煜承團隊榮耀橫幅 */
+.lobby-team-banner {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.18) 0%, rgba(15, 23, 42, 0.85) 100%);
+    border: 2px solid rgba(245, 158, 11, 0.55);
+    border-radius: 16px;
+    padding: 14px 20px;
+    margin-bottom: 18px;
+    box-shadow: 0 8px 25px rgba(245, 158, 11, 0.2);
+}
+.lobby-banner-logo {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--gold);
+    box-shadow: 0 0 18px rgba(245, 158, 11, 0.7);
+    flex-shrink: 0;
+}
+.lobby-banner-info h3 {
+    font-size: 1.25rem;
+    font-weight: 900;
+    color: var(--gold-light);
+    margin: 0 0 4px 0;
+}
+.lobby-banner-info p {
+    font-size: 0.9rem;
+    color: #cbd5e1;
+    margin: 0;
+}
+
+/* 大廳卡片右下角裝飾勳章 */
+.card-corner-logo {
+    position: absolute;
+    right: -18px;
+    bottom: -18px;
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    opacity: 0.14;
+    pointer-events: none;
+    mix-blend-mode: lighten;
+}
+
+/* 4. 戰鬥擂台正中央：巨型戰場背景勳章 (VS 正後方) */
+.arena-center-logo {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 190px;
+    height: 190px;
+    object-fit: cover;
+    border-radius: 50%;
+    opacity: 0.28;
+    pointer-events: none;
+    z-index: 1;
+    mix-blend-mode: lighten;
+    filter: drop-shadow(0 0 20px rgba(245, 158, 11, 0.8));
+}
+
+/* 確保選手與倒數計時器浮在擂台中央 LOGO 之上 */
+#view-arena .fighter-box,
+#view-arena .arena-center-panel {
+    position: relative;
+    z-index: 3;
+}
+#nen-fx-canvas {
+    z-index: 4;
+}
+
+/* 取消選項按鈕點擊後的手機預設殘留黃框 */
+.option-btn:focus,
+.option-btn:active {
+    outline: none !important;
+}
+@media (hover: none) {
+    .option-btn:hover {
+        border-color: rgba(255, 255, 255, 0.15) !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        transform: none !important;
+    }
+}
+
+/* 手機版尺寸自動微調，確保霸氣又不擠壓題目空間 */
+@media (max-width: 768px) {
+    .hero-logo-img {
+        width: 96px !important;
+        height: 96px !important;
+    }
+    .hero-logo-title {
+        font-size: 1.25rem !important;
+    }
+    .lobby-team-banner {
+        padding: 10px 14px !important;
+        gap: 12px !important;
+        margin-bottom: 12px !important;
+    }
+    .lobby-banner-logo {
+        width: 52px !important;
+        height: 52px !important;
+    }
+    .lobby-banner-info h3 {
+        font-size: 1.02rem !important;
+    }
+    .lobby-banner-info p {
+        font-size: 0.78rem !important;
+    }
+    .arena-center-logo {
+        width: 122px !important;
+        height: 122px !important;
+        opacity: 0.32 !important;
+    }
+}

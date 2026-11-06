@@ -11,14 +11,18 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
 <body>
-    <!-- 頂部導覽列 (整合煜承團隊專屬 LOGO) -->
+    <!-- 🌟 新增：全頁面底層中央「煜承團隊」巨型榮耀浮水印背景 -->
+    <div class="global-bg-watermark">
+        <img src="assets/logo.png" alt="煜承團隊背景圖騰" onerror="if(!this.dataset.try){this.dataset.try=1;this.src='assets/logo.jpg';}else{this.style.display='none';}">
+    </div>
+
+    <!-- 頂部導覽列 -->
     <header class="top-nav">
         <div class="brand">
-            <img class="team-logo" src="assets/logo.png" alt="煜承團隊" onerror="this.style.display='none'">
+            <img class="team-logo" src="assets/logo.png" alt="煜承團隊" onerror="if(!this.dataset.try){this.dataset.try=1;this.src='assets/logo.jpg';}else{this.style.display='none';}">
             <div class="brand-text">
                 <span class="team-title">煜承團隊</span>
                 <span class="arena-title">天空競技場</span>
-                <span class="sub-brand">商品實戰修練塔</span>
             </div>
         </div>
         <nav class="nav-buttons">
@@ -36,7 +40,7 @@
         <section id="view-admin" class="view-section"></section>
     </main>
 
-    <!-- 關鍵破快取：動態載入 JS 模組，加上時間戳記 ?v= 強制手機瀏覽器永遠抓取雲端最新 data.js！ -->
+    <!-- 動態載入 JS 模組，加上時間戳記 ?v= 強制手機瀏覽器永遠抓取雲端最新檔案 -->
     <script>
         const ver = Date.now();
         document.write('<script src="js/data.js?v=' + ver + '"><\/script>');
@@ -77,8 +81,14 @@
                     const totalUsersCount = DataStore.getUsers().length;
                     container.innerHTML = `
                         <div class="glass-card login-card">
-                            <h2>🔥 挑戰者登錄櫃檯</h2>
-                            <p class="hint-text" style="color:var(--text-muted); margin:8px 0 16px;">踏入高達 200 層的天空競技場，透過商品問答施展念能力晉級！</p>
+                            <!-- 🌟 登入櫃檯正中央：巨型發光「煜承團隊」榮耀勳章 -->
+                            <div class="hero-logo-showcase">
+                                <div class="hero-logo-glow"></div>
+                                <img class="hero-logo-img" src="assets/logo.png" alt="煜承團隊榮耀勳章" onerror="if(!this.dataset.try){this.dataset.try=1;this.src='assets/logo.jpg';}else{this.style.display='none';}">
+                                <div class="hero-logo-title">🔥 煜承團隊・天空競技場 🔥</div>
+                                <div class="hero-logo-subtitle">商品實戰修練塔｜挑戰者登錄櫃檯</div>
+                            </div>
+
                             <div class="form-group">
                                 <label>挑戰者帳號</label>
                                 <input type="text" id="login-user" placeholder="請輸入帳號" autocapitalize="none" autocorrect="off" spellcheck="false">
@@ -87,7 +97,7 @@
                                 <label>挑戰者密碼</label>
                                 <input type="password" id="login-pwd" placeholder="請輸入密碼">
                             </div>
-                            <button class="btn-primary full-width" onclick="App.login()">進入天空競技場</button>
+                            <button class="btn-primary full-width" onclick="App.login()">⚔️ 進入天空競技場</button>
 
                             <div style="margin-top:12px; text-align:center;">
                                 <button class="btn-secondary" style="font-size:0.8rem; padding:6px 12px; width:100%;" onclick="App.forceSyncCloudData()">
@@ -122,6 +132,15 @@
                 const currentFloorName = floorQuestions.length > 0 ? floorQuestions[0].floorName : `第 ${user.floor} 層商品修練`;
 
                 container.innerHTML = `
+                    <!-- 🌟 競技大廳頂部橫幅：醒目展示煜承團隊勳章 -->
+                    <div class="lobby-team-banner">
+                        <img class="lobby-banner-logo" src="assets/logo.png" alt="煜承團隊" onerror="if(!this.dataset.try){this.dataset.try=1;this.src='assets/logo.jpg';}else{this.style.display='none';}">
+                        <div class="lobby-banner-info">
+                            <h3>🔥 煜承團隊・菁英商品實戰修練塔</h3>
+                            <p>千錘百鍊商品力，登頂 200 層巔峰強者殿堂！</p>
+                        </div>
+                    </div>
+
                     <div class="lobby-grid">
                         <div class="glass-card profile-card">
                             <div class="profile-header">
@@ -153,7 +172,10 @@
                             <button class="btn-danger full-width" style="margin-top:15px;" onclick="App.logout()">登出挑戰者帳號</button>
                         </div>
 
-                        <div class="glass-card tower-card">
+                        <div class="glass-card tower-card" style="position:relative; overflow:hidden;">
+                            <!-- 晉級卡片右下角榮耀勳章裝飾 -->
+                            <img src="assets/logo.png" class="card-corner-logo" onerror="if(!this.dataset.try){this.dataset.try=1;this.src='assets/logo.jpg';}else{this.style.display='none';}">
+                            
                             <h2>🗼 天空競技場晉級挑戰</h2>
                             <div class="tower-progress">
                                 <div class="progress-bar" style="width: ${Math.min(100, (user.floor / 200) * 100)}%"></div>
@@ -174,7 +196,6 @@
                 `;
             },
 
-            // 強制清除手機舊快取並重新載入雲端最新 DEFAULT_USERS 與 DEFAULT_QUESTIONS
             forceSyncCloudData() {
                 localStorage.removeItem('ha_data_version');
                 if (typeof DEFAULT_USERS !== 'undefined') {
@@ -188,11 +209,9 @@
             },
 
             login() {
-                // 自動過濾所有前後空白與隱藏字元，並將帳號轉為字串比對
                 const u = document.getElementById('login-user').value.replace(/\s+/g, '').toLowerCase();
                 const p = document.getElementById('login-pwd').value.replace(/\s+/g, '');
 
-                // 同時搜尋手機 localStorage 與雲端 DEFAULT_USERS，只要任一邊有就放行！
                 const localUsers = DataStore.getUsers();
                 const cloudUsers = (typeof DEFAULT_USERS !== 'undefined') ? DEFAULT_USERS : [];
                 const combinedUsers = [...cloudUsers, ...localUsers];
@@ -209,7 +228,6 @@
                     return;
                 }
 
-                // 確保該帳號已寫入手機 localStorage
                 if (!localUsers.some(x => String(x.username).toLowerCase() === u)) {
                     localUsers.push(found);
                     DataStore.saveUsers(localUsers);

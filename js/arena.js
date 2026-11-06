@@ -1,4 +1,4 @@
-// js/arena.js - 30秒圓形倒數、1F直升3F、3F起每次+3層、自動尋題防卡關與念能力動畫引擎
+// js/arena.js - 整合煜承團隊擂台中央巨型圖騰、消除選項殘留黃框、30秒圓形倒數、自動尋題防卡關與念能力動畫引擎
 
 const ArenaModule = {
     state: {
@@ -149,6 +149,9 @@ const ArenaModule = {
 
         container.innerHTML = `
             <div class="arena-stage" id="arena-stage">
+                <!-- 🌟 擂台正中央背景：煜承團隊巨型榮耀戰場勳章 -->
+                <img class="arena-center-logo" src="assets/logo.png" alt="煜承團隊擂台圖騰" onerror="if(!this.dataset.try){this.dataset.try=1;this.src='assets/logo.jpg';}else{this.style.display='none';}">
+                
                 <canvas id="nen-fx-canvas"></canvas>
 
                 <div class="fighter-box" id="player-fighter">
@@ -197,7 +200,7 @@ const ArenaModule = {
                 <div>
                     ${q.options.map((opt, idx) => {
                         const letter = ['A', 'B', 'C', 'D'][idx];
-                        return `<button class="option-btn" onclick="ArenaModule.submitAnswer('${letter}')">${opt}</button>`;
+                        return `<button class="option-btn" onclick="this.blur(); ArenaModule.submitAnswer('${letter}')">${opt}</button>`;
                     }).join('')}
                 </div>
             </div>
