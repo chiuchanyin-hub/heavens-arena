@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- 強制禁止手機瀏覽器快取 HTML -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>煜承團隊｜天空競技場・商品實戰修練塔</title>
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/animation.css">
@@ -11,7 +15,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
 <body>
-    <!-- 🌟 新增：全頁面底層中央「煜承團隊」巨型榮耀浮水印背景 -->
+    <!-- 全頁面底層中央「煜承團隊」巨型榮耀浮水印背景 -->
     <div class="global-bg-watermark">
         <img src="assets/logo.png" alt="煜承團隊背景圖騰" onerror="if(!this.dataset.try){this.dataset.try=1;this.src='assets/logo.jpg';}else{this.style.display='none';}">
     </div>
@@ -40,7 +44,7 @@
         <section id="view-admin" class="view-section"></section>
     </main>
 
-    <!-- 動態載入 JS 模組，加上時間戳記 ?v= 強制手機瀏覽器永遠抓取雲端最新檔案 -->
+    <!-- 動態載入 JS 模組 -->
     <script>
         const ver = Date.now();
         document.write('<script src="js/data.js?v=' + ver + '"><\/script>');
@@ -78,12 +82,11 @@
                 const user = DataStore.getCurrentUser();
 
                 if (!user) {
-                    const totalUsersCount = DataStore.getUsers().length;
+                    const allUsers = DataStore.getUsers();
                     container.innerHTML = `
                         <div class="glass-card login-card">
-                            <!-- 🌟 登入櫃檯正中央：巨型發光「煜承團隊」榮耀勳章 -->
+                            <!-- 登入櫃檯正中央：巨型發光「煜承團隊」榮耀勳章 -->
                             <div class="hero-logo-showcase">
-                                <div class="hero-logo-glow"></div>
                                 <img class="hero-logo-img" src="assets/logo.png" alt="煜承團隊榮耀勳章" onerror="if(!this.dataset.try){this.dataset.try=1;this.src='assets/logo.jpg';}else{this.style.display='none';}">
                                 <div class="hero-logo-title">🔥 煜承團隊・天空競技場 🔥</div>
                                 <div class="hero-logo-subtitle">商品實戰修練塔｜挑戰者登錄櫃檯</div>
@@ -97,11 +100,11 @@
                                 <label>挑戰者密碼</label>
                                 <input type="password" id="login-pwd" placeholder="請輸入密碼">
                             </div>
-                            <button class="btn-primary full-width" onclick="App.login()">⚔️ 進入天空競技場</button>
+                            <button class="btn-primary full-width" id="btn-login-submit" onclick="App.login()">⚔️ 進入天空競技場</button>
 
                             <div style="margin-top:12px; text-align:center;">
-                                <button class="btn-secondary" style="font-size:0.8rem; padding:6px 12px; width:100%;" onclick="App.forceSyncCloudData()">
-                                    🔄 無法登入？點此強制同步最新雲端名單 (目前載入 ${totalUsersCount} 人)
+                                <button class="btn-secondary" style="font-size:0.82rem; padding:8px 12px; width:100%;" onclick="App.forceSyncCloudData()">
+                                    🔄 點此強制從雲端重新拉取最新名單 (目前內建 ${allUsers.length} 人)
                                 </button>
                             </div>
 
@@ -132,7 +135,7 @@
                 const currentFloorName = floorQuestions.length > 0 ? floorQuestions[0].floorName : `第 ${user.floor} 層商品修練`;
 
                 container.innerHTML = `
-                    <!-- 🌟 競技大廳頂部橫幅：醒目展示煜承團隊勳章 -->
+                    <!-- 競技大廳頂部橫幅：醒目展示煜承團隊勳章 -->
                     <div class="lobby-team-banner">
                         <img class="lobby-banner-logo" src="assets/logo.png" alt="煜承團隊" onerror="if(!this.dataset.try){this.dataset.try=1;this.src='assets/logo.jpg';}else{this.style.display='none';}">
                         <div class="lobby-banner-info">
@@ -173,7 +176,6 @@
                         </div>
 
                         <div class="glass-card tower-card" style="position:relative; overflow:hidden;">
-                            <!-- 晉級卡片右下角榮耀勳章裝飾 -->
                             <img src="assets/logo.png" class="card-corner-logo" onerror="if(!this.dataset.try){this.dataset.try=1;this.src='assets/logo.jpg';}else{this.style.display='none';}">
                             
                             <h2>🗼 天空競技場晉級挑戰</h2>
@@ -196,39 +198,99 @@
                 `;
             },
 
-            forceSyncCloudData() {
-                localStorage.removeItem('ha_data_version');
-                if (typeof DEFAULT_USERS !== 'undefined') {
-                    localStorage.setItem('ha_users', JSON.stringify(DEFAULT_USERS));
+            // 直接繞過瀏覽器快取，透過網路即時抓取伺服器上的 js/data.js 原始檔並解析最新名單與題庫
+            async fetchLatestCloudData() {
+                try {
+                    const res = await fetch('js/data.js?nocache=' + Date.now(), { cache: 'no-store' });
+                    const codeText = await res.text();
+
+                    // 抽出 DEFAULT_USERS 與 DEFAULT_QUESTIONS
+                    const usersMatch = codeText.match(/const\s+DEFAULT_USERS\s*=\s*(\[[\s\S]*?\]);/);
+                    const questionsMatch = codeText.match(/const\s+DEFAULT_QUESTIONS\s*=\s*(\[[\s\S]*?\]);/);
+
+                    if (usersMatch && usersMatch[1]) {
+                        const freshUsers = JSON.parse(usersMatch[1]);
+                        const localUsers = DataStore.getUsers();
+                        const merged = freshUsers.map(fu => {
+                            const ex = localUsers.find(lu => String(lu.username).toLowerCase() === String(fu.username).toLowerCase());
+                            if (ex) {
+                                return {
+                                    ...fu,
+                                    floor: Math.max(Number(fu.floor) || 1, Number(ex.floor) || 1),
+                                    wins: Math.max(Number(fu.wins) || 0, Number(ex.wins) || 0),
+                                    customAvatar: ex.customAvatar || fu.customAvatar || ''
+                                };
+                            }
+                            return fu;
+                        });
+                        DataStore.saveUsers(merged);
+                    }
+
+                    if (questionsMatch && questionsMatch[1]) {
+                        const freshQuestions = JSON.parse(questionsMatch[1]);
+                        if (freshQuestions.length > 0) {
+                            DataStore.saveQuestions(freshQuestions);
+                        }
+                    }
+                    return true;
+                } catch (err) {
+                    console.error('雲端同步失敗:', err);
+                    return false;
                 }
-                if (typeof DEFAULT_QUESTIONS !== 'undefined') {
-                    localStorage.setItem('ha_questions', JSON.stringify(DEFAULT_QUESTIONS));
-                }
-                alert('✅ 已強制同步雲端最新名單與題庫！頁面即將重新整理。');
-                window.location.reload(true);
             },
 
-            login() {
-                const u = document.getElementById('login-user').value.replace(/\s+/g, '').toLowerCase();
+            async forceSyncCloudData() {
+                await this.fetchLatestCloudData();
+                const updatedUsers = DataStore.getUsers();
+                const names = updatedUsers.map(u => `${u.nickname}(@${u.username})`).join('、');
+                alert(`✅ 已成功從雲端伺服器強制拉取最新資料！\n\n目前名單共 ${updatedUsers.length} 人：\n${names}`);
+                this.renderLobby();
+            },
+
+            // 支援帳號、或是直接輸入「業務中文暱稱」也能登入！且找不到人時自動去雲端重抓最新 data.js
+            async login() {
+                const rawInput = document.getElementById('login-user').value.trim();
+                const u = rawInput.replace(/\s+/g, '').toLowerCase();
                 const p = document.getElementById('login-pwd').value.replace(/\s+/g, '');
 
-                const localUsers = DataStore.getUsers();
-                const cloudUsers = (typeof DEFAULT_USERS !== 'undefined') ? DEFAULT_USERS : [];
-                const combinedUsers = [...cloudUsers, ...localUsers];
-
-                const found = combinedUsers.find(user => {
-                    const dbUser = String(user.username).replace(/\s+/g, '').toLowerCase();
-                    const dbPass = String(user.password).replace(/\s+/g, '');
-                    return dbUser === u && dbPass === p;
-                });
-
-                if (!found) {
-                    const availableNames = [...new Set(combinedUsers.map(x => x.username))].join(', ');
-                    alert(`帳號或密碼錯誤！\n目前手機讀取到的有效帳號有：【 ${availableNames} 】\n\n若裡面沒有您的帳號，請先點擊下方「🔄 強制同步最新雲端名單」，或確認電腦後台已匯出最新 data.js 並 git push！`);
+                if (!u || !p) {
+                    alert('請輸入帳號與密碼！');
                     return;
                 }
 
-                if (!localUsers.some(x => String(x.username).toLowerCase() === u)) {
+                const matchUser = (list) => list.find(user => {
+                    const dbUser = String(user.username || '').replace(/\s+/g, '').toLowerCase();
+                    const dbNick = String(user.nickname || '').replace(/\s+/g, '').toLowerCase();
+                    const dbPass = String(user.password || '').replace(/\s+/g, '');
+                    // 支援輸入「帳號」或「中文暱稱」皆可登入，並容許開頭有無 0 (例如 01 與 1)
+                    const userMatched = (dbUser === u) || (dbNick === u) || (dbUser.replace(/^0+/, '') === u.replace(/^0+/, '') && u.length > 0);
+                    return userMatched && dbPass === p;
+                });
+
+                let localUsers = DataStore.getUsers();
+                const cloudUsers = (typeof DEFAULT_USERS !== 'undefined') ? DEFAULT_USERS : [];
+                let found = matchUser([...cloudUsers, ...localUsers]);
+
+                // 如果第一次沒找到，立即在背景強制從雲端拉取最新 js/data.js 再比對一次！
+                if (!found) {
+                    const btn = document.getElementById('btn-login-submit');
+                    if (btn) btn.innerText = '🔄 正在同步雲端最新帳號...';
+                    await this.fetchLatestCloudData();
+                    if (btn) btn.innerText = '⚔️ 進入天空競技場';
+
+                    localUsers = DataStore.getUsers();
+                    found = matchUser(localUsers);
+                }
+
+                if (!found) {
+                    const currentAll = DataStore.getUsers();
+                    const availableList = currentAll.map(x => `${x.nickname}(帳號:${x.username})`).join('、');
+                    alert(`❌ 帳號或密碼錯誤！\n\n📱 目前雲端 ` + `js/data.js` + ` 內實際存在的帳號清單有：\n【 ${availableList} 】\n\n💡 若清單中沒有您剛新增的人，代表 VS Code 裡的 js/data.js 尚未按 Ctrl+S 存檔或尚未推送成功！`);
+                    return;
+                }
+
+                // 確保寫入本機
+                if (!localUsers.some(x => String(x.username).toLowerCase() === String(found.username).toLowerCase())) {
                     localUsers.push(found);
                     DataStore.saveUsers(localUsers);
                 }
@@ -266,7 +328,11 @@
             }
         };
 
-        window.addEventListener('DOMContentLoaded', () => App.renderLobby());
+        // 每次開啟網頁時自動在背景向雲端核對一次最新 data.js
+        window.addEventListener('DOMContentLoaded', async () => {
+            await App.fetchLatestCloudData();
+            App.renderLobby();
+        });
     </script>
 </body>
 </html>

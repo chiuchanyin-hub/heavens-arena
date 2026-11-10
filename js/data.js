@@ -7861,7 +7861,7 @@ const DEFAULT_QUESTIONS = [
 const DEFAULT_USERS = [
     {
         "username": "00902201",
-        "password": "650906",
+        "password": "650609",
         "nickname": "子旭",
         "roleId": "monkey",
         "floor": 1,
@@ -7954,6 +7954,24 @@ const DEFAULT_USERS = [
         "password": "780908",
         "nickname": "Ning",
         "roleId": "monkey",
+        "floor": 3,
+        "customAvatar": "",
+        "wins": 1
+    },
+    {
+        "username": "00739291",
+        "password": "680911",
+        "nickname": "慧雯",
+        "roleId": "agent",
+        "floor": 1,
+        "customAvatar": "",
+        "wins": 0
+    },
+    {
+        "username": "00737752",
+        "password": "691027",
+        "nickname": "韋汝",
+        "roleId": "monkey",
         "floor": 1,
         "customAvatar": "",
         "wins": 0
@@ -7964,7 +7982,7 @@ const DEFAULT_ADMIN_PWD = "0908";
 
 const DataStore = {
     init() {
-        const DATA_VERSION = '1793860451014';
+        const DATA_VERSION = '1794271381813';
         if (localStorage.getItem('ha_data_version') !== DATA_VERSION) {
             // 1. 強制更新最新題庫
             localStorage.setItem('ha_questions', JSON.stringify(DEFAULT_QUESTIONS));
