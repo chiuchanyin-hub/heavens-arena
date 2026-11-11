@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- 強制禁止手機瀏覽器快取 HTML -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -54,8 +53,139 @@
     </script>
 
     <script>
+        // =========================================================================
+        // 🌐 雲端即時戰況中心設定：請在下方雙引號內貼上您的 Firebase Realtime Database 網址
+        // 例如：const FIREBASE_DB_URL = "https://heavens-arena-3d18c-default-rtdb.asia-southeast1.firebasedatabase.app";
+        // =========================================================================
+        const FIREBASE_DB_URL = "請在這裡貼上您的Firebase網址";
+
+        const CloudSync = {
+            getCleanUrl() {
+                if (!FIREBASE_DB_URL || FIREBASE_DB_URL.includes("請在這裡") || !FIREBASE_DB_URL.startsWith("http")) {
+                    return null;
+                }
+                return FIREBASE_DB_URL.replace(/\/$/, "");
+            },
+
+            // 上傳單一挑戰者的最新戰況（過關晉級、換頭像、後台單筆編輯時自動觸發）
+            async pushUser(user) {
+                const baseUrl = this.getCleanUrl();
+                if (!baseUrl || !user || !user.username) return;
+                const key = String(user.username).trim().toLowerCase();
+                try {
+                    await fetch(`${baseUrl}/users/${encodeURIComponent(key)}.json`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(user)
+                    });
+                } catch (e) {
+                    console.warn('雲端單筆戰況上傳失敗:', e);
+                }
+            },
+
+            // 批次同步整個挑戰者清單（後台新增或刪除帳號時觸發）
+            async pushAllUsers(usersList) {
+                const baseUrl = this.getCleanUrl();
+                if (!baseUrl || !Array.isArray(usersList)) return;
+                const payload = {};
+                usersList.forEach(u => {
+                    if (u && u.username) {
+                        const key = String(u.username).trim().toLowerCase();
+                        payload[key] = u;
+                    }
+                });
+                try {
+                    await fetch(`${baseUrl}/users.json`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                } catch (e) {
+                    console.warn('雲端全體名單上傳失敗:', e);
+                }
+            },
+
+            // 從雲端拉取全體挑戰者的最新樓層與勝場，並與本機智慧合併
+            async pullAllUsers() {
+                const baseUrl = this.getCleanUrl();
+                if (!baseUrl) return false;
+                try {
+                    const res = await fetch(`${baseUrl}/users.json?nocache=${Date.now()}`, { cache: 'no-store' });
+                    const cloudData = await res.json();
+                    const localUsers = DataStore.getUsers();
+
+                    // 若雲端還是空的，主動把本機名單初始化推上雲端
+                    if (!cloudData || typeof cloudData !== 'object') {
+                        await this.pushAllUsers(localUsers);
+                        return true;
+                    }
+
+                    const cloudUsers = Object.values(cloudData).filter(u => u && u.username);
+                    const mergedMap = new Map();
+
+                    // 1. 先放入本機與 data.js 名單
+                    localUsers.forEach(u => {
+                        mergedMap.set(String(u.username).trim().toLowerCase(), { ...u });
+                    });
+
+                    // 2. 融合雲端其他夥伴的最新戰況（取最高樓層與最高勝場，確保進度只進不退）
+                    let hasLocalHigher = false;
+                    cloudUsers.forEach(cu => {
+                        const key = String(cu.username).trim().toLowerCase();
+                        if (mergedMap.has(key)) {
+                            const lu = mergedMap.get(key);
+                            const maxFloor = Math.max(Number(lu.floor) || 1, Number(cu.floor) || 1);
+                            const maxWins = Math.max(Number(lu.wins) || 0, Number(cu.wins) || 0);
+                            if ((Number(lu.floor) || 1) > (Number(cu.floor) || 1) || (Number(lu.wins) || 0) > (Number(cu.wins) || 0)) {
+                                hasLocalHigher = true;
+                            }
+                            mergedMap.set(key, {
+                                ...lu,
+                                ...cu,
+                                floor: maxFloor,
+                                wins: maxWins,
+                                customAvatar: cu.customAvatar || lu.customAvatar || ''
+                            });
+                        } else {
+                            mergedMap.set(key, cu);
+                        }
+                    });
+
+                    const finalUsers = Array.from(mergedMap.values());
+                    localStorage.setItem('ha_users', JSON.stringify(finalUsers));
+
+                    // 若本機有夥伴還沒上傳到的新紀錄或新帳號，順手補推上雲端
+                    if (hasLocalHigher || finalUsers.length > cloudUsers.length) {
+                        this.pushAllUsers(finalUsers);
+                    }
+                    return true;
+                } catch (e) {
+                    console.warn('雲端戰況拉取失敗:', e);
+                    return false;
+                }
+            },
+
+            // 攔截 DataStore 的更新動作，讓闖關晉級與後台修改自動觸發雲端同步
+            hookDataStore() {
+                if (typeof DataStore === 'undefined' || DataStore._cloudHooked) return;
+                DataStore._cloudHooked = true;
+
+                const origUpdateUser = DataStore.updateUser.bind(DataStore);
+                DataStore.updateUser = function(updatedUser) {
+                    origUpdateUser(updatedUser);
+                    CloudSync.pushUser(updatedUser);
+                };
+
+                const origSaveUsers = DataStore.saveUsers.bind(DataStore);
+                DataStore.saveUsers = function(users) {
+                    origSaveUsers(users);
+                    CloudSync.pushAllUsers(users);
+                };
+            }
+        };
+
         const App = {
-            switchTab(tabName) {
+            async switchTab(tabName) {
                 if (typeof ArenaModule !== 'undefined') ArenaModule.clearTimer();
                 document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
                 document.querySelectorAll('.nav-buttons button').forEach(el => el.classList.remove('active'));
@@ -63,18 +193,45 @@
                 if (tabName === 'lobby') {
                     document.getElementById('view-lobby').classList.add('active');
                     document.getElementById('btn-lobby').classList.add('active');
+                    await CloudSync.pullAllUsers();
                     this.renderLobby();
                 } else if (tabName === 'leaderboard') {
                     document.getElementById('view-leaderboard').classList.add('active');
                     document.getElementById('btn-leaderboard').classList.add('active');
+                    // 先渲染一次畫面，接著立刻從雲端拉取全體挑戰者最新戰況並刷新英雄榜！
                     LeaderboardModule.render();
+                    this.injectLeaderboardSyncBar('🔄 正在同步全體挑戰者最新雲端戰況...');
+                    const ok = await CloudSync.pullAllUsers();
+                    LeaderboardModule.render();
+                    this.injectLeaderboardSyncBar(
+                        ok ? '✅ 已即時同步全體挑戰者最新雲端戰況！' 
+                           : '⚠️ 尚未設定 Firebase 雲端網址（目前僅顯示本機進度）'
+                    );
                 } else if (tabName === 'admin') {
                     document.getElementById('view-admin').classList.add('active');
                     document.getElementById('btn-admin').classList.add('active');
+                    await CloudSync.pullAllUsers();
                     AdminModule.render();
                 } else if (tabName === 'arena') {
                     document.getElementById('view-arena').classList.add('active');
                 }
+            },
+
+            // 在樓層英雄榜上方自動嵌入「即時刷新戰況」狀態列與按鈕
+            injectLeaderboardSyncBar(statusText) {
+                const lbContainer = document.getElementById('view-leaderboard');
+                if (!lbContainer) return;
+                let bar = document.getElementById('lb-cloud-sync-bar');
+                if (!bar) {
+                    bar = document.createElement('div');
+                    bar.id = 'lb-cloud-sync-bar';
+                    bar.style.cssText = 'display:flex; justify-content:space-between; align-items:center; background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.4); border-radius:12px; padding:10px 14px; margin-bottom:14px; flex-wrap:wrap; gap:8px;';
+                    lbContainer.prepend(bar);
+                }
+                bar.innerHTML = `
+                    <span style="font-size:0.88rem; color:#e0f2fe; font-weight:600;">${statusText}</span>
+                    <button class="btn-secondary" style="padding:5px 12px; font-size:0.82rem;" onclick="App.switchTab('leaderboard')">🔄 立即刷新英雄榜</button>
+                `;
             },
 
             renderLobby() {
@@ -85,7 +242,6 @@
                     const allUsers = DataStore.getUsers();
                     container.innerHTML = `
                         <div class="glass-card login-card">
-                            <!-- 登入櫃檯正中央：巨型發光「煜承團隊」榮耀勳章 -->
                             <div class="hero-logo-showcase">
                                 <img class="hero-logo-img" src="assets/logo.png" alt="煜承團隊榮耀勳章" onerror="if(!this.dataset.try){this.dataset.try=1;this.src='assets/logo.jpg';}else{this.style.display='none';}">
                                 <div class="hero-logo-title">🔥 煜承團隊・天空競技場 🔥</div>
@@ -135,7 +291,6 @@
                 const currentFloorName = floorQuestions.length > 0 ? floorQuestions[0].floorName : `第 ${user.floor} 層商品修練`;
 
                 container.innerHTML = `
-                    <!-- 競技大廳頂部橫幅：醒目展示煜承團隊勳章 -->
                     <div class="lobby-team-banner">
                         <img class="lobby-banner-logo" src="assets/logo.png" alt="煜承團隊" onerror="if(!this.dataset.try){this.dataset.try=1;this.src='assets/logo.jpg';}else{this.style.display='none';}">
                         <div class="lobby-banner-info">
@@ -198,13 +353,11 @@
                 `;
             },
 
-            // 直接繞過瀏覽器快取，透過網路即時抓取伺服器上的 js/data.js 原始檔並解析最新名單與題庫
             async fetchLatestCloudData() {
                 try {
                     const res = await fetch('js/data.js?nocache=' + Date.now(), { cache: 'no-store' });
                     const codeText = await res.text();
 
-                    // 抽出 DEFAULT_USERS 與 DEFAULT_QUESTIONS
                     const usersMatch = codeText.match(/const\s+DEFAULT_USERS\s*=\s*(\[[\s\S]*?\]);/);
                     const questionsMatch = codeText.match(/const\s+DEFAULT_QUESTIONS\s*=\s*(\[[\s\S]*?\]);/);
 
@@ -223,7 +376,7 @@
                             }
                             return fu;
                         });
-                        DataStore.saveUsers(merged);
+                        localStorage.setItem('ha_users', JSON.stringify(merged));
                     }
 
                     if (questionsMatch && questionsMatch[1]) {
@@ -232,6 +385,8 @@
                             DataStore.saveQuestions(freshQuestions);
                         }
                     }
+                    // 接著再從 Firebase 拉取所有人的最新樓層進度
+                    await CloudSync.pullAllUsers();
                     return true;
                 } catch (err) {
                     console.error('雲端同步失敗:', err);
@@ -242,12 +397,11 @@
             async forceSyncCloudData() {
                 await this.fetchLatestCloudData();
                 const updatedUsers = DataStore.getUsers();
-                const names = updatedUsers.map(u => `${u.nickname}(@${u.username})`).join('、');
-                alert(`✅ 已成功從雲端伺服器強制拉取最新資料！\n\n目前名單共 ${updatedUsers.length} 人：\n${names}`);
+                const names = updatedUsers.map(u => `${u.nickname}(@${u.username} - ${u.floor}F)`).join('、');
+                alert(`✅ 已成功同步全體最新名單與戰況！\n\n目前名單共 ${updatedUsers.length} 人：\n${names}`);
                 this.renderLobby();
             },
 
-            // 支援帳號、或是直接輸入「業務中文暱稱」也能登入！且找不到人時自動去雲端重抓最新 data.js
             async login() {
                 const rawInput = document.getElementById('login-user').value.trim();
                 const u = rawInput.replace(/\s+/g, '').toLowerCase();
@@ -262,7 +416,6 @@
                     const dbUser = String(user.username || '').replace(/\s+/g, '').toLowerCase();
                     const dbNick = String(user.nickname || '').replace(/\s+/g, '').toLowerCase();
                     const dbPass = String(user.password || '').replace(/\s+/g, '');
-                    // 支援輸入「帳號」或「中文暱稱」皆可登入，並容許開頭有無 0 (例如 01 與 1)
                     const userMatched = (dbUser === u) || (dbNick === u) || (dbUser.replace(/^0+/, '') === u.replace(/^0+/, '') && u.length > 0);
                     return userMatched && dbPass === p;
                 });
@@ -271,7 +424,6 @@
                 const cloudUsers = (typeof DEFAULT_USERS !== 'undefined') ? DEFAULT_USERS : [];
                 let found = matchUser([...cloudUsers, ...localUsers]);
 
-                // 如果第一次沒找到，立即在背景強制從雲端拉取最新 js/data.js 再比對一次！
                 if (!found) {
                     const btn = document.getElementById('btn-login-submit');
                     if (btn) btn.innerText = '🔄 正在同步雲端最新帳號...';
@@ -285,11 +437,10 @@
                 if (!found) {
                     const currentAll = DataStore.getUsers();
                     const availableList = currentAll.map(x => `${x.nickname}(帳號:${x.username})`).join('、');
-                    alert(`❌ 帳號或密碼錯誤！\n\n📱 目前雲端 ` + `js/data.js` + ` 內實際存在的帳號清單有：\n【 ${availableList} 】\n\n💡 若清單中沒有您剛新增的人，代表 VS Code 裡的 js/data.js 尚未按 Ctrl+S 存檔或尚未推送成功！`);
+                    alert(`❌ 帳號或密碼錯誤！\n\n📱 目前雲端內實際存在的帳號清單有：\n【 ${availableList} 】`);
                     return;
                 }
 
-                // 確保寫入本機
                 if (!localUsers.some(x => String(x.username).toLowerCase() === String(found.username).toLowerCase())) {
                     localUsers.push(found);
                     DataStore.saveUsers(localUsers);
@@ -297,6 +448,7 @@
 
                 localStorage.setItem('ha_current_user', found.username);
                 sessionStorage.setItem('ha_current_user', found.username);
+                await CloudSync.pullAllUsers();
                 this.renderLobby();
             },
 
@@ -314,7 +466,7 @@
                     const user = DataStore.getCurrentUser();
                     user.customAvatar = e.target.result;
                     DataStore.updateUser(user);
-                    alert('🎉 自訂大頭像更新成功！');
+                    alert('🎉 自訂大頭像更新成功！已同步至英雄榜！');
                     App.renderLobby();
                 };
                 reader.readAsDataURL(file);
@@ -328,8 +480,8 @@
             }
         };
 
-        // 每次開啟網頁時自動在背景向雲端核對一次最新 data.js
         window.addEventListener('DOMContentLoaded', async () => {
+            CloudSync.hookDataStore();
             await App.fetchLatestCloudData();
             App.renderLobby();
         });
