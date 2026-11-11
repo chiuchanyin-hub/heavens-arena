@@ -54,24 +54,28 @@
 
     <script>
         // =========================================================================
-        // 🌐 雲端即時戰況中心設定：請在下方雙引號內貼上您的 Firebase Realtime Database 網址
-        // 例如：const FIREBASE_DB_URL = "https://heavens-arena-3d18c-default-rtdb.asia-southeast1.firebasedatabase.app";
+        // 🌐 煜承團隊專屬 Firebase Realtime Database 即時戰況中心網址 (已直接內建)
         // =========================================================================
-        const FIREBASE_DB_URL = "請在這裡貼上您的Firebase網址";
+        const FIREBASE_DB_URL = "https://heavens-arena-3d18c-default-rtdb.asia-southeast1.firebasedatabase.app";
 
         const CloudSync = {
             getCleanUrl() {
-                if (!FIREBASE_DB_URL || FIREBASE_DB_URL.includes("請在這裡") || !FIREBASE_DB_URL.startsWith("http")) {
+                if (!FIREBASE_DB_URL || !FIREBASE_DB_URL.startsWith("http")) {
                     return null;
                 }
                 return FIREBASE_DB_URL.replace(/\/$/, "");
+            },
+
+            // 安全轉換 Firebase Key（過濾 . # $ [ ] / 等禁用字元）
+            safeKey(username) {
+                return String(username || '').trim().toLowerCase().replace(/[.#$\[\]\/]/g, '_');
             },
 
             // 上傳單一挑戰者的最新戰況（過關晉級、換頭像、後台單筆編輯時自動觸發）
             async pushUser(user) {
                 const baseUrl = this.getCleanUrl();
                 if (!baseUrl || !user || !user.username) return;
-                const key = String(user.username).trim().toLowerCase();
+                const key = this.safeKey(user.username);
                 try {
                     await fetch(`${baseUrl}/users/${encodeURIComponent(key)}.json`, {
                         method: 'PUT',
@@ -90,7 +94,7 @@
                 const payload = {};
                 usersList.forEach(u => {
                     if (u && u.username) {
-                        const key = String(u.username).trim().toLowerCase();
+                        const key = this.safeKey(u.username);
                         payload[key] = u;
                     }
                 });
@@ -111,10 +115,11 @@
                 if (!baseUrl) return false;
                 try {
                     const res = await fetch(`${baseUrl}/users.json?nocache=${Date.now()}`, { cache: 'no-store' });
+                    if (!res.ok) return false;
                     const cloudData = await res.json();
                     const localUsers = DataStore.getUsers();
 
-                    // 若雲端還是空的，主動把本機名單初始化推上雲端
+                    // 若雲端還是空的 (null)，主動把本機名單初始化推上雲端
                     if (!cloudData || typeof cloudData !== 'object') {
                         await this.pushAllUsers(localUsers);
                         return true;
@@ -125,13 +130,13 @@
 
                     // 1. 先放入本機與 data.js 名單
                     localUsers.forEach(u => {
-                        mergedMap.set(String(u.username).trim().toLowerCase(), { ...u });
+                        mergedMap.set(this.safeKey(u.username), { ...u });
                     });
 
                     // 2. 融合雲端其他夥伴的最新戰況（取最高樓層與最高勝場，確保進度只進不退）
                     let hasLocalHigher = false;
                     cloudUsers.forEach(cu => {
-                        const key = String(cu.username).trim().toLowerCase();
+                        const key = this.safeKey(cu.username);
                         if (mergedMap.has(key)) {
                             const lu = mergedMap.get(key);
                             const maxFloor = Math.max(Number(lu.floor) || 1, Number(cu.floor) || 1);
@@ -156,7 +161,7 @@
 
                     // 若本機有夥伴還沒上傳到的新紀錄或新帳號，順手補推上雲端
                     if (hasLocalHigher || finalUsers.length > cloudUsers.length) {
-                        this.pushAllUsers(finalUsers);
+                        await this.pushAllUsers(finalUsers);
                     }
                     return true;
                 } catch (e) {
@@ -198,14 +203,13 @@
                 } else if (tabName === 'leaderboard') {
                     document.getElementById('view-leaderboard').classList.add('active');
                     document.getElementById('btn-leaderboard').classList.add('active');
-                    // 先渲染一次畫面，接著立刻從雲端拉取全體挑戰者最新戰況並刷新英雄榜！
                     LeaderboardModule.render();
                     this.injectLeaderboardSyncBar('🔄 正在同步全體挑戰者最新雲端戰況...');
                     const ok = await CloudSync.pullAllUsers();
                     LeaderboardModule.render();
                     this.injectLeaderboardSyncBar(
                         ok ? '✅ 已即時同步全體挑戰者最新雲端戰況！' 
-                           : '⚠️ 尚未設定 Firebase 雲端網址（目前僅顯示本機進度）'
+                           : '⚠️ 雲端連線異常，請檢查 Firebase Rules 是否為 true'
                     );
                 } else if (tabName === 'admin') {
                     document.getElementById('view-admin').classList.add('active');
@@ -217,7 +221,6 @@
                 }
             },
 
-            // 在樓層英雄榜上方自動嵌入「即時刷新戰況」狀態列與按鈕
             injectLeaderboardSyncBar(statusText) {
                 const lbContainer = document.getElementById('view-leaderboard');
                 if (!lbContainer) return;
@@ -385,7 +388,6 @@
                             DataStore.saveQuestions(freshQuestions);
                         }
                     }
-                    // 接著再從 Firebase 拉取所有人的最新樓層進度
                     await CloudSync.pullAllUsers();
                     return true;
                 } catch (err) {
